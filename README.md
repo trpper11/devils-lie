@@ -6,7 +6,7 @@ toward kills you. Every trap is **fair**: there's always a safe path if you're
 smarter (and faster) than the level expects. Death is instant. Respawn is instant.
 Rage, then laugh.
 
-**[▶ Play it](#)** &nbsp;•&nbsp; 4 hand-built levels &nbsp;•&nbsp; ~6 kinds of lie.
+**[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 4 hand-built levels &nbsp;•&nbsp; ~6 kinds of lie.
 
 ## Controls
 - **← → / A D** — move
