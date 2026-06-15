@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Devil's Lie — a troll platformer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="frame">
+    <div id="hud">
+      <span id="hud-level">LEVEL 1</span>
+      <span id="hud-deaths">DEATHS 0</span>
+      <span id="hud-time">0.0s</span>
+    </div>
+
+    <canvas id="game" width="800" height="480"></canvas>
+
+    <!-- Title overlay -->
+    <div class="overlay" id="title-screen">
+      <h1>DEVIL'S<span>LIE</span></h1>
+      <p class="tag">The level is lying to you.</p>
+      <p class="sub">4 levels. Every floor, every door, every spike — a trap.<br/>Be smarter than the smartest, or die instantly.</p>
+      <button class="btn" id="start-btn">PLAY</button>
+      <p class="controls">← → / A D to move &nbsp;•&nbsp; SPACE / ↑ / W to jump &nbsp;•&nbsp; R to restart</p>
+    </div>
+
+    <!-- Win overlay -->
+    <div class="overlay hidden" id="win-screen">
+      <h1 class="won">YOU<span>WON</span></h1>
+      <p class="tag" id="win-stats">Survived all 4 lies.</p>
+      <p class="sub">Now go record the rage-quit walkthrough. 😈</p>
+      <button class="btn" id="again-btn">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <p id="credit">Devil's Lie — a $0 browser troll game</p>
+  <script src="game.js"></script>
+</body>
+</html>

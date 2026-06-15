@@ -1,0 +1,128 @@
+:root {
+  --bg: #0b0b12;
+  --ink: #f4f4f8;
+  --red: #ff3b54;
+  --red-deep: #c01030;
+  --gold: #ffcf5c;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: radial-gradient(circle at 50% 0%, #1a0e16 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family: "Poppins", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#frame {
+  position: relative;
+  width: 800px;
+  max-width: 96vw;
+  aspect-ratio: 800 / 520;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05) inset;
+}
+
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  letter-spacing: .5px;
+  color: var(--gold);
+  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0));
+  z-index: 5;
+  pointer-events: none;
+}
+#hud-deaths { color: var(--red); }
+
+canvas#game {
+  display: block;
+  width: 100%;
+  height: calc(100% - 40px);
+  margin-top: 40px;
+  background: #12121d;
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 40%, rgba(40,8,18,.86), rgba(8,8,14,.96));
+  backdrop-filter: blur(3px);
+}
+.overlay.hidden { display: none; }
+
+.overlay h1 {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(28px, 6vw, 54px);
+  line-height: 1.15;
+  color: var(--ink);
+  text-shadow: 0 4px 0 var(--red-deep), 0 0 30px rgba(255,59,84,.5);
+}
+.overlay h1 span { display: block; color: var(--red); }
+.overlay h1.won span { color: var(--gold); }
+
+.tag {
+  margin-top: 18px;
+  font-weight: 800;
+  font-size: clamp(14px, 2.4vw, 20px);
+  color: var(--gold);
+}
+.sub {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #c9c9d6;
+  max-width: 460px;
+}
+
+.btn {
+  margin-top: 26px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 15px;
+  color: #1a0008;
+  background: linear-gradient(180deg, var(--gold), #f0a92e);
+  border: none;
+  padding: 16px 34px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #9a6a10, 0 12px 24px rgba(0,0,0,.4);
+  transition: transform .06s ease, box-shadow .06s ease;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #9a6a10; }
+
+.controls {
+  margin-top: 28px;
+  font-size: 11px;
+  color: #8a8a9a;
+  letter-spacing: .3px;
+}
+
+#credit {
+  font-size: 12px;
+  color: #5a5a6a;
+  letter-spacing: .4px;
+}
