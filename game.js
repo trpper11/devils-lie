@@ -273,7 +273,7 @@
       else if (ch === "E") exit = { c, r };
       else if (ch === "@") exitAlt = { c, r };
       else if (ch === "P") traps.push({ type: "popup", c, r, up: 0, triggered: false });
-      else if (ch === "D") traps.push({ type: "guillotine", c, r, period: 2.0 / spd, down: 0.85, off: c * 0.27 });
+      else if (ch === "D") traps.push({ type: "guillotine", c, r, period: (sawWorld ? 2.0 : 2.6) / spd, down: 0.85, off: c * 0.27 });
       else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6 / spd, down: 1.0, off: 0 });
     }
     traps = mergeCrushers(traps);
@@ -381,11 +381,11 @@
   // ---- trap rhythms ----
   // Falling shard: a piece forms at the ceiling (telegraph), then DROPS under gravity
   // to the floor and shatters, then a new one forms next cycle. Deadly only while falling.
-  const SHARD_WARN = 0.36, SHARD_FALL = 0.5;
+  const SHARD_WARN = 0.34, SHARD_FALL = 0.82; // slower fall so the big ice shard is clearly visible
   function shardState(t) {
     const cyc = (levelTime + t.off) % t.period, ceil = t.r * TILE, floorTop = (LROWS - 1) * TILE;
     if (cyc < SHARD_WARN) return { phase: "warn", k: cyc / SHARD_WARN, y: ceil };
-    if (cyc < SHARD_WARN + SHARD_FALL) { const k = (cyc - SHARD_WARN) / SHARD_FALL; return { phase: "fall", k, y: ceil + k * k * (floorTop - ceil) }; }
+    if (cyc < SHARD_WARN + SHARD_FALL) { const k = (cyc - SHARD_WARN) / SHARD_FALL; return { phase: "fall", k, y: ceil + Math.pow(k, 1.3) * (floorTop - ceil) }; }
     return { phase: "gone", k: 0, y: ceil };
   }
   // Saw worlds keep the old spinning-blade-on-a-chain: it lowers to the floor and rises on a rhythm.
@@ -463,7 +463,7 @@
       if (c < 0 || c >= COLS || r < 0 || r >= LROWS) continue;
       const ch = grid[r][c];
       // spikes are deadly right up to their tips now — touch a needle, pop instantly
-      if (ch === "^" && overlap(hx, hy, hw, hh, c * TILE + 5, r * TILE + 9, TILE - 10, TILE - 9)) return "pop";
+      if (ch === "^" && overlap(hx, hy, hw, hh, c * TILE + 2, r * TILE + 8, TILE - 4, TILE - 8)) return "pop";
       if (ch === "M" && overlap(hx, hy, hw, hh, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
       // real lava: surface is deadly (top ~60% of the tile so the floor edge stays fair)
       if (ch === "L" && overlap(hx, hy, hw, hh, c * TILE, r * TILE + 8, TILE, TILE - 8)) return "burn";
@@ -934,21 +934,20 @@
     // ground shadow at the floor surface
     if (player.onGround) { ctx.fillStyle = "rgba(0,0,0,0.30)"; ctx.beginPath(); ctx.ellipse(0, floorY, BR * 1.05, 3.0, 0, 0, 7); ctx.fill(); }
 
-    // ---- slim stick legs + big shoes splayed OPPOSITE ways, resting ON the floor ----
+    // ---- slim stick legs + bright shoes splayed OPPOSITE ways, resting ON the floor ----
     const hipY = bodyY + BR * 0.6;
-    ctx.strokeStyle = "#1a0e12"; ctx.lineWidth = 2.3; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-3.5, hipY); ctx.lineTo(-8, floorY - ll); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(3.5, hipY); ctx.lineTo(8, floorY - rl); ctx.stroke();
+    ctx.strokeStyle = "#3a2410"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-3.5, hipY); ctx.lineTo(-7, floorY - ll); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3.5, hipY); ctx.lineTo(7, floorY - rl); ctx.stroke();
     function shoe(sxp, syp, sgn) {                 // sgn -1 = points left, +1 = points right
       ctx.save(); ctx.translate(sxp, syp); ctx.rotate(sgn * 0.1);
-      ctx.fillStyle = "#120a0e";
-      ctx.beginPath(); ctx.ellipse(sgn * 3.5, -1.5, 9, 3.4, 0, 0, 7); ctx.fill();   // toe out front, sitting on floor
-      ctx.beginPath(); ctx.ellipse(-sgn * 3, -2.6, 2.8, 2.4, 0, 0, 7); ctx.fill();  // heel
-      ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.beginPath(); ctx.ellipse(sgn * 4, -2.4, 3.6, 1, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#3a2410"; ctx.beginPath(); ctx.ellipse(sgn * 2.5, -0.6, 7.6, 3.4, 0, 0, 7); ctx.fill();   // dark sole
+      ctx.fillStyle = "#f2c14e"; ctx.beginPath(); ctx.ellipse(sgn * 2.5, -2.2, 6.8, 2.8, 0, 0, 7); ctx.fill();   // bright yellow shoe
+      ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.beginPath(); ctx.ellipse(sgn * 3.2, -3, 2.8, 1, 0, 0, 7); ctx.fill(); // shine
       ctx.restore();
     }
-    shoe(-8, floorY - ll, -1);
-    shoe(8, floorY - rl, 1);
+    shoe(-7, floorY - ll, -1);
+    shoe(7, floorY - rl, 1);
 
     // ---- body + angry face (lifted up so legs show) ----
     ctx.save(); ctx.translate(0, bodyY);
