@@ -9,6 +9,7 @@
   // ---- World (logical resolution; CSS-scaled to fit any screen) --------
   const TILE = 40, COLS = 20, ROWS = 12;
   let LROWS = ROWS;        // rows in the CURRENT level (>12 for multi-story levels); set per level
+  let sawWorld = false;    // true in saw-themed worlds → D = spinning blade on a chain (not a falling shard)
   const W = COLS * TILE; // 800
   const H = ROWS * TILE; // 480
 
@@ -260,6 +261,7 @@
     LROWS = grid.length; // multi-story levels are taller than one screen
     texts = (L.texts || []).map(o => ({ col: o.c, text: o.t }));
     curTheme = THEMES[(L.theme != null ? L.theme : Math.floor(i / 5)) % THEMES.length];
+    sawWorld = curTheme.haz === "saw";
     const spd = L.spd || 1;
     reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
@@ -386,6 +388,14 @@
     if (cyc < SHARD_WARN + SHARD_FALL) { const k = (cyc - SHARD_WARN) / SHARD_FALL; return { phase: "fall", k, y: ceil + k * k * (floorTop - ceil) }; }
     return { phase: "gone", k: 0, y: ceil };
   }
+  // Saw worlds keep the old spinning-blade-on-a-chain: it lowers to the floor and rises on a rhythm.
+  function sawExtend(t) {
+    const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
+    if (p < dp * 0.4) return p / (dp * 0.4);
+    if (p < dp) return 1;
+    return Math.max(0, 1 - (p - dp) / (1 - dp));
+  }
+  function sawLen(t, f) { return (LROWS - 1 - t.r) * TILE * f; }
   function crusherDown(t) {
     const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
     if (p < dp * 0.25) return p / (dp * 0.25);
@@ -408,14 +418,19 @@
         if (t.up > 0.12) { const sh = TILE * 0.85 * t.up;
           if (overlap(hx, hy, hw, hh, tx + 6, ty + TILE - sh, TILE - 12, sh)) dead = 2; }
       } else if (t.type === "guillotine") {
-        const s = shardState(t);
-        if (s.phase !== "gone" && Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.2) hazardNear = 1;
-        if (s.phase === "fall" && overlap(hx, hy, hw, hh, tx + 8, s.y, TILE - 16, TILE - 4)) dead = 2;
-        // shatter burst when the piece reaches the floor (once per fall cycle)
-        const cycNum = Math.floor((levelTime + t.off) / t.period);
-        if (s.phase === "gone" && t.shatterCyc !== cycNum) {
-          t.shatterCyc = cycNum; sndBreak();
-          for (let i = 0; i < 7; i++) particles.push({ x: tx + TILE / 2, y: (LROWS - 1) * TILE, vx: (Math.random() - .5) * 220, vy: -Math.random() * 160, life: 0.4, r: 2.5, col: curTheme.spk ? curTheme.spk[0] : "#cfd2db" });
+        if (sawWorld) { // spinning sawblade on a chain (extend/retract)
+          const f = sawExtend(t), len = sawLen(t, f);
+          if (Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.3) hazardNear = 1;
+          if (f > 0.05 && overlap(hx, hy, hw, hh, tx + 7, ty, TILE - 14, len)) dead = 2;
+        } else {        // big falling ICE shard (drops & shatters)
+          const s = shardState(t);
+          if (s.phase !== "gone" && Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.2) hazardNear = 1;
+          if (s.phase === "fall" && overlap(hx, hy, hw, hh, tx + 7, s.y, TILE - 14, TILE - 4)) dead = 2;
+          const cycNum = Math.floor((levelTime + t.off) / t.period);
+          if (s.phase === "gone" && t.shatterCyc !== cycNum) {
+            t.shatterCyc = cycNum; sndBreak();
+            for (let i = 0; i < 9; i++) particles.push({ x: tx + TILE / 2, y: (LROWS - 1) * TILE, vx: (Math.random() - .5) * 240, vy: -Math.random() * 170, life: 0.45, r: 2.6, col: Math.random() < 0.6 ? "#dff2ff" : "#9fd8f2" });
+          }
         }
       } else if (t.type === "crusher") {
         const f = crusherDown(t), w = (t.w || 1) * TILE, by = ty + crusherTravel(t) * f;
@@ -491,6 +506,14 @@
     player.onGround = false;
     moveAxis(player.vx * dt, 0);
     moveAxis(0, player.vy * dt);
+    // GROUND STICK: if solid floor is right under the feet, rest on it (vy=0, grounded).
+    // Without this a resting player perpetually micro-falls ~1px and re-lands every frame
+    // (the floor isn't "detected" until the hitbox overlaps it) — that was the vibration/twitch.
+    if (!player.onGround && player.vy >= 0) {
+      const footRow = Math.floor((player.y + PH) / TILE);
+      const cL = Math.floor((player.x + 2) / TILE), cR = Math.floor((player.x + PW - 2) / TILE);
+      if (solidAt(cL, footRow) || solidAt(cR, footRow)) { player.y = footRow * TILE - PH; player.vy = 0; player.onGround = true; }
+    }
     if (!wasGround && player.onGround) { player.landT = 0; player.dblUsed = false; sndLand(); } // landed; refresh the double jump
     // bounce pad: standing on a J tile flings you upward (enables vertical play)
     if (player.onGround) {
@@ -683,7 +706,7 @@
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
       if (t.type === "popup" && t.up > 0.02) drawSpikeColumn(tx, ty + TILE - TILE * 0.85 * t.up, TILE * 0.85 * t.up);
-      else if (t.type === "guillotine") drawShard(tx, ty, shardState(t));
+      else if (t.type === "guillotine") { if (sawWorld) drawSaw(tx, ty, sawExtend(t)); else drawShard(tx, ty, shardState(t)); }
       else if (t.type === "crusher") drawCrusher(tx, ty + crusherTravel(t) * crusherDown(t), (t.w || 1) * TILE, ty);
     }
 
@@ -798,47 +821,59 @@
   // Falling hazard — themed "shard" instead of the old arrow/blade. Style per world:
   //  ice = icicle, saw = spinning sawblade, thorn = barbed vine, crystal = shard, blade = stone spike.
   // Falling shard: forms at the ceiling (telegraph) then drops & shatters on the floor.
+  // BIG ICE SHARD — a chunky jagged icicle that cracks off the ceiling and drops, like
+  // ice breaking off a cave roof. Always ice (regardless of world), bigger than before.
   function drawShard(tx, ty, s) {
-    const cxm = tx + TILE / 2, haz = curTheme.haz || "blade", spk = curTheme.spk || ["#eef0f6", "#9498a6"];
-    const floorTop = (LROWS - 1) * TILE;
-    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(tx + 7, ty, TILE - 14, 5); // ceiling mount
-    // floor impact target — telegraphs WHERE it will land (and that it's a faller, not a wall)
+    const cxm = tx + TILE / 2, floorTop = (LROWS - 1) * TILE;
+    // frosty mount where it cracks from
+    ctx.fillStyle = "rgba(190,225,245,0.5)"; ctx.fillRect(tx + 4, ty, TILE - 8, 5);
+    // floor impact target (telegraph)
     if (s.phase !== "gone") {
       const inten = s.phase === "warn" ? s.k * 0.6 : 1;
-      ctx.save(); ctx.globalAlpha = 0.3 * inten; ctx.fillStyle = "#ff5a5a";
-      ctx.beginPath(); ctx.ellipse(cxm, floorTop + TILE - 3, 11, 3, 0, 0, 7); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.32 * inten; ctx.fillStyle = "#9fd8f2";
+      ctx.beginPath(); ctx.ellipse(cxm, floorTop + TILE - 3, 13, 3.2, 0, 0, 7); ctx.fill(); ctx.restore();
     }
-    if (s.phase === "gone") { // remnant nub left at the ceiling
-      ctx.fillStyle = spk[1]; ctx.beginPath(); ctx.moveTo(cxm - 5, ty + 4); ctx.lineTo(cxm + 5, ty + 4); ctx.lineTo(cxm, ty + 11); ctx.closePath(); ctx.fill();
+    if (s.phase === "gone") { // cracked stub left on the ceiling
+      ctx.fillStyle = "#cfeaf7"; ctx.beginPath(); ctx.moveTo(cxm - 6, ty + 4); ctx.lineTo(cxm + 6, ty + 4); ctx.lineTo(cxm, ty + 12); ctx.closePath(); ctx.fill();
       return;
     }
     let topY = s.y;
-    if (s.phase === "warn") { topY = ty + Math.sin(animTime * 42) * 1.3 * s.k; } // shivers before it drops
-    else { ctx.globalAlpha = 0.3; ctx.strokeStyle = spk[0]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cxm, topY - 14); ctx.lineTo(cxm, topY); ctx.stroke(); ctx.globalAlpha = 1; } // fall streak
-    drawShardPiece(cxm, topY, haz, spk);
+    if (s.phase === "warn") topY = ty + Math.sin(animTime * 40) * 1.4 * s.k; // shivers, about to crack
+    else { ctx.globalAlpha = 0.28; ctx.strokeStyle = "#dff2ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cxm, topY - 16); ctx.lineTo(cxm, topY); ctx.stroke(); ctx.globalAlpha = 1; } // fall streak
+    drawIceChunk(cxm, topY);
   }
-  function drawShardPiece(cxm, topY, haz, spk) {
-    const h = TILE - 4, tipY = topY + h;
-    if (haz === "saw") {
-      const R = 12, cy = topY + R + 1; ctx.fillStyle = spk[1]; ctx.beginPath();
-      for (let i = 0; i < 18; i++) { const ang = (i / 18) * 6.283 + animTime * 12, rr = i % 2 ? R : R * 0.66; ctx.lineTo(cxm + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
-      ctx.closePath(); ctx.fill(); ctx.fillStyle = "#22222c"; ctx.beginPath(); ctx.arc(cxm, cy, 3, 0, 7); ctx.fill(); return;
-    }
-    if (haz === "thorn") {
-      ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, topY, 8, h - 6); ctx.fillStyle = spk[0];
-      for (let yy = topY + 3; yy < tipY - 6; yy += 7) {
-        ctx.beginPath(); ctx.moveTo(cxm - 4, yy); ctx.lineTo(cxm - 10, yy + 3); ctx.lineTo(cxm - 4, yy + 6); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(cxm + 4, yy); ctx.lineTo(cxm + 10, yy + 3); ctx.lineTo(cxm + 4, yy + 6); ctx.fill();
-      }
-      ctx.beginPath(); ctx.moveTo(cxm - 6, tipY - 8); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm + 6, tipY - 8); ctx.closePath(); ctx.fill(); return;
-    }
+  function drawIceChunk(cxm, topY) {
+    const w = 15, h = TILE + 4, tipY = topY + h;            // big & chunky
     const g = ctx.createLinearGradient(cxm, topY, cxm, tipY);
-    if (haz === "ice") { g.addColorStop(0, "#eaf7ff"); g.addColorStop(0.6, spk[1]); g.addColorStop(1, "#dff2ff"); }
-    else if (haz === "crystal") { g.addColorStop(0, spk[0]); g.addColorStop(1, spk[1]); }
-    else { g.addColorStop(0, "#9aa0ad"); g.addColorStop(0.5, spk[1]); g.addColorStop(1, "#b02030"); }
-    ctx.globalAlpha = haz === "ice" ? 0.92 : 1; ctx.fillStyle = g;
-    ctx.beginPath(); ctx.moveTo(cxm - 8, topY + 2); ctx.lineTo(cxm + 8, topY + 2); ctx.lineTo(cxm + 3, tipY - 9); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - 3, tipY - 9); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-    ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.moveTo(cxm - 2, topY + 4); ctx.lineTo(cxm, topY + 4); ctx.lineTo(cxm, tipY - 7); ctx.closePath(); ctx.fill();
+    g.addColorStop(0, "#f2fbff"); g.addColorStop(0.45, "#b6e4f7"); g.addColorStop(1, "#7fc7e8");
+    ctx.globalAlpha = 0.95; ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cxm - w, topY + 2); ctx.lineTo(cxm + w, topY + 2);
+    ctx.lineTo(cxm + w * 0.5, topY + h * 0.45); ctx.lineTo(cxm + w * 0.65, topY + h * 0.6);
+    ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - w * 0.55, topY + h * 0.62); ctx.lineTo(cxm - w * 0.45, topY + h * 0.44);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    // bright facets / highlights
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.beginPath(); ctx.moveTo(cxm - 3, topY + 5); ctx.lineTo(cxm + 1, topY + 5); ctx.lineTo(cxm - 1, tipY - 6); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cxm + 5, topY + 6); ctx.lineTo(cxm + 2, topY + h * 0.5); ctx.stroke();
+  }
+  // Spinning sawblade lowered on a chain (the saw-world hazard).
+  function drawSaw(tx, ty, f) {
+    const cxm = tx + TILE / 2, row = Math.floor(ty / TILE), tipY = ty + (LROWS - 1 - row) * TILE * f;
+    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(tx + 8, ty, TILE - 16, 4); // ceiling mount
+    if (f < 0.05) { ctx.fillStyle = "#6a6a78"; ctx.fillRect(cxm - 3, ty + 3, 6, 6); return; }
+    // chain
+    ctx.strokeStyle = "#8a8a98"; ctx.lineWidth = 2.4;
+    for (let yy = ty + 3; yy < tipY - 12; yy += 6) { ctx.beginPath(); ctx.ellipse(cxm, yy + 3, 2.6, 3, 0, 0, 7); ctx.stroke(); }
+    // spinning blade
+    const R = 13, by = tipY - 11, teeth = 10;
+    const gr = ctx.createRadialGradient(cxm, by, 2, cxm, by, R); gr.addColorStop(0, "#e9edf4"); gr.addColorStop(1, "#9aa0ad");
+    ctx.fillStyle = gr; ctx.beginPath();
+    for (let i = 0; i < teeth * 2; i++) { const ang = (i / (teeth * 2)) * 6.283 + animTime * 14, rr = i % 2 ? R : R * 0.62; ctx.lineTo(cxm + Math.cos(ang) * rr, by + Math.sin(ang) * rr); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#2a2a36"; ctx.beginPath(); ctx.arc(cxm, by, 3.2, 0, 7); ctx.fill();
+    ctx.fillStyle = "#9aa0ad"; ctx.beginPath(); ctx.arc(cxm, by, 1.4, 0, 7); ctx.fill();
   }
   // Crusher — now hangs from CHAINS so it clearly reads as "slams down, don't be under it".
   function drawCrusher(x, y, w, anchorY) {
@@ -887,58 +922,56 @@
     const ll = moving ? Math.max(0, Math.sin(wcyc)) * 5 : 0;   // left foot lifts…
     const rl = moving ? Math.max(0, -Math.sin(wcyc)) * 5 : 0;  // …then the right (silly march)
 
-    // soft contact shadow on the ground (depth)
-    if (player.onGround) {
-      ctx.save(); ctx.translate(cx, cy + R + 11);
-      ctx.fillStyle = "rgba(0,0,0,0.32)"; ctx.beginPath(); ctx.ellipse(0, 0, R * 1.15, 3.4, 0, 0, 7); ctx.fill();
-      ctx.restore();
-    }
+    if (window.__DLrec) window.__DLrec.push({ rx: +px.toFixed(2), ry: +py.toFixed(2), sx: +sx.toFixed(3), sy: +sy.toFixed(3), ll: +ll.toFixed(2), rl: +rl.toFixed(2), g: player.onGround ? 1 : 0, vx: +player.vx.toFixed(1), vy: +player.vy.toFixed(1), lt: +player.landT.toFixed(3) });
 
     ctx.save();
     ctx.translate(cx, cy + R * (1 - sy)); ctx.scale(sx, sy);
 
-    // ---- long SLIM stick legs + big floppy shoes that splay OPPOSITE ways (Chaplin troll) ----
-    const legTop = R * 0.3, shoeY = R + 8;
-    ctx.strokeStyle = "#1a0e12"; ctx.lineWidth = 2.2; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-3, legTop); ctx.lineTo(-9, shoeY - ll); ctx.stroke();   // left stick leg
-    ctx.beginPath(); ctx.moveTo(3, legTop); ctx.lineTo(9, shoeY - rl); ctx.stroke();     // right stick leg
+    // Layout (local space): floor surface is the BOTTOM of the hitbox so the shoes sit
+    // ON the road (not inside it). The ball is lifted, with slim legs reaching down.
+    const floorY = R, BR = 12, bodyY = floorY - 8 - BR; // body bottom 8px above the floor
+
+    // ground shadow at the floor surface
+    if (player.onGround) { ctx.fillStyle = "rgba(0,0,0,0.30)"; ctx.beginPath(); ctx.ellipse(0, floorY, BR * 1.05, 3.0, 0, 0, 7); ctx.fill(); }
+
+    // ---- slim stick legs + big shoes splayed OPPOSITE ways, resting ON the floor ----
+    const hipY = bodyY + BR * 0.6;
+    ctx.strokeStyle = "#1a0e12"; ctx.lineWidth = 2.3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-3.5, hipY); ctx.lineTo(-8, floorY - ll); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3.5, hipY); ctx.lineTo(8, floorY - rl); ctx.stroke();
     function shoe(sxp, syp, sgn) {                 // sgn -1 = points left, +1 = points right
-      ctx.save(); ctx.translate(sxp, syp); ctx.rotate(sgn * 0.12);
+      ctx.save(); ctx.translate(sxp, syp); ctx.rotate(sgn * 0.1);
       ctx.fillStyle = "#120a0e";
-      ctx.beginPath(); ctx.ellipse(sgn * 3.5, 0, 9.5, 3.8, 0, 0, 7); ctx.fill();          // big toe out front
-      ctx.beginPath(); ctx.ellipse(-sgn * 3, -1.4, 3, 2.6, 0, 0, 7); ctx.fill();          // heel
-      ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.beginPath(); ctx.ellipse(sgn * 4, -1.4, 4, 1.1, 0, 0, 7); ctx.fill(); // shine
+      ctx.beginPath(); ctx.ellipse(sgn * 3.5, -1.5, 9, 3.4, 0, 0, 7); ctx.fill();   // toe out front, sitting on floor
+      ctx.beginPath(); ctx.ellipse(-sgn * 3, -2.6, 2.8, 2.4, 0, 0, 7); ctx.fill();  // heel
+      ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.beginPath(); ctx.ellipse(sgn * 4, -2.4, 3.6, 1, 0, 0, 7); ctx.fill();
       ctx.restore();
     }
-    shoe(-9, shoeY - ll, -1);
-    shoe(9, shoeY - rl, 1);
+    shoe(-8, floorY - ll, -1);
+    shoe(8, floorY - rl, 1);
 
-    // ---- round body ----
-    ctx.fillStyle = GRAD.balloon; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
-    ctx.strokeStyle = "rgba(80,0,12,0.5)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, R - 0.5, 0, 7); ctx.stroke(); // rim
-    ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.ellipse(-R * 0.38, -R * 0.42, R * 0.16, R * 0.24, -0.5, 0, 7); ctx.fill();
-
-    // ---- angry face ----
-    const ex = 5.5;
-    // angry eyebrows (slanting down toward the nose)
-    ctx.strokeStyle = "#160018"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-ex - 4, -8.5); ctx.lineTo(-ex + 3, -5.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(ex + 4, -8.5); ctx.lineTo(ex - 3, -5.5); ctx.stroke();
-    // narrowed eyes
+    // ---- body + angry face (lifted up so legs show) ----
+    ctx.save(); ctx.translate(0, bodyY);
+    ctx.fillStyle = GRAD.balloon; ctx.beginPath(); ctx.arc(0, 0, BR, 0, 7); ctx.fill();
+    ctx.strokeStyle = "rgba(80,0,12,0.5)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, BR - 0.5, 0, 7); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.ellipse(-BR * 0.38, -BR * 0.42, BR * 0.16, BR * 0.24, -0.5, 0, 7); ctx.fill();
+    const ex = 5;
+    ctx.strokeStyle = "#160018"; ctx.lineWidth = 2.2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-ex - 3.5, -7.5); ctx.lineTo(-ex + 3, -4.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex + 3.5, -7.5); ctx.lineTo(ex - 3, -4.8); ctx.stroke();
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.ellipse(-ex, -2.5, 4, 3.2, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(ex, -2.5, 4, 3.2, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = "#160018"; // pupils glare slightly toward the way it's facing
-    ctx.beginPath(); ctx.arc(-ex + dir * 1.4, -1.6, 2, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(ex + dir * 1.4, -1.6, 2, 0, 7); ctx.fill();
-    // a little frown
-    ctx.strokeStyle = "#160018"; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(0, 12, 4, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
-    // ---- handlebar moustache ----
-    ctx.lineWidth = 3.2; ctx.strokeStyle = "#160018"; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(-6, 4.5, -9.5, 8); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(6, 4.5, 9.5, 8); ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 6, 1.6, 0, 7); ctx.fillStyle = "#160018"; ctx.fill(); // moustache center knot
+    ctx.beginPath(); ctx.ellipse(-ex, -2, 3.6, 3, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(ex, -2, 3.6, 3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#160018";
+    ctx.beginPath(); ctx.arc(-ex + dir * 1.3, -1.2, 1.8, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + dir * 1.3, -1.2, 1.8, 0, 7); ctx.fill();
+    // angry snarl with gritted teeth
+    ctx.fillStyle = "#2a0006";
+    ctx.beginPath(); ctx.moveTo(-6, 5.5); ctx.lineTo(6, 5.5); ctx.quadraticCurveTo(0, 10.5, -6, 5.5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#f2f2f6"; ctx.beginPath();
+    for (let i = 0; i < 5; i++) { const tx = -5 + i * 2.5; ctx.moveTo(tx, 5.5); ctx.lineTo(tx + 1.25, 7.8); ctx.lineTo(tx + 2.5, 5.5); }
+    ctx.fill();
+    ctx.restore();
 
     ctx.restore();
   }
