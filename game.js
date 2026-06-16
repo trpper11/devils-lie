@@ -20,28 +20,7 @@
   // =====================================================================
   // THEMES — the scenery shifts every 4 levels (and varies per level)
   // =====================================================================
-  const THEMES = [
-    { sky:["#2a0f1e","#1a0e16","#0c0a14"], glow:"rgba(255,120,90,0.18)", orb:"#ffd9a0",
-      mtnA:"rgba(70,28,40,0.55)", mtnB:"rgba(45,18,28,0.78)", sil:"rgba(22,10,16,0.85)",
-      blk:["#3a2630","#4a323e","#412a34","#291a22"], spk:["#eef0f6","#9498a6"],
-      ember:"rgba(255,150,80,0.55)", decor:"spikes", name:"Hellpit" },
-    { sky:["#0e2438","#0a1622","#06101a"], glow:"rgba(120,200,255,0.16)", orb:"#dcefff",
-      mtnA:"rgba(40,70,100,0.5)", mtnB:"rgba(24,44,66,0.78)", sil:"rgba(14,26,40,0.85)",
-      blk:["#27384a","#34495e","#2e3f52","#1d2a38"], spk:["#eaf4ff","#9fc0d8"],
-      ember:"rgba(170,220,255,0.5)", decor:"crystals", name:"Frostbite" },
-    { sky:["#13281c","#0d1b13","#08120c"], glow:"rgba(120,220,120,0.14)", orb:"#dfffb0",
-      mtnA:"rgba(34,70,40,0.5)", mtnB:"rgba(20,44,26,0.78)", sil:"rgba(12,26,16,0.85)",
-      blk:["#2a3a26","#384c30","#324428","#1f2c1a"], spk:["#eef0e0","#9aa878"],
-      ember:"rgba(180,255,150,0.45)", decor:"trees", name:"Overgrowth" },
-    { sky:["#1c1730","#13101e","#0a0812"], glow:"rgba(220,120,255,0.16)", orb:"#d6c4ff",
-      mtnA:"rgba(60,52,80,0.5)", mtnB:"rgba(38,32,54,0.78)", sil:"rgba(22,18,32,0.85)",
-      blk:["#34304a","#46415f","#3c3854","#23203a"], spk:["#dfe2ee","#9a9ab8"],
-      ember:"rgba(210,160,255,0.5)", decor:"gears", name:"The Machine" },
-    { sky:["#160a26","#0d0718","#04030a"], glow:"rgba(180,90,255,0.18)", orb:"#e6bcff",
-      mtnA:"rgba(48,28,72,0.55)", mtnB:"rgba(30,16,48,0.8)", sil:"rgba(16,8,26,0.88)",
-      blk:["#2e2444","#3e3058","#352a4c","#201838"], spk:["#f0d8ff","#b08ad0"],
-      ember:"rgba(210,140,255,0.55)", decor:"shards", name:"The Void" },
-  ];
+  const THEMES = window.THEMES; // defined in levels.js (shared with the verifier)
   let curTheme = THEMES[0];
 
   // =====================================================================
@@ -49,130 +28,7 @@
   //  # solid   ^ spike   S start   E exit   F fake floor (looks solid, isn't)
   //  P popup spike   D guillotine (timed)   X crusher   M fake exit   O fall-through
   // =====================================================================
-  const LEVELS = [
-    { name: "Just walk to the door",
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S    ^         E   ","#############FF#####"],
-      texts: [{c:3,t:"See? Totally normal. Just walk right →"},{c:11,t:"Almost there! Keep going…"}] },
-
-    { name: "Trust the floor",
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","      #  #  #       ","  S             P E ","#####FFFFFFFFFF#####"],
-      texts: [{c:5,t:"A nice solid bridge. Cross it →"},{c:13,t:"Ha. Should've taken the high road."}] },
-
-    { name: "Look up. Look out.",
-      grid: ["                    ","      D   D   XX    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S              M E ","####################"],
-      texts: [{c:2,t:"Easy corridor. Run to the EXIT →"},{c:14,t:"Door's right there. Trust me."}] },
-
-    { name: "The Gauntlet",
-      grid: ["                    ","              D     ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S  OOO P       M E ","####   ###FFF#######"],
-      texts: [{c:2,t:"Everything you learned. Go."},{c:9,t:"You remember fake floors… right?"},{c:15,t:"Pick a door. Choose wisely 😈"}] },
-
-    { name: "Double Cross",
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S     P        M E ","####FF####FF########"],
-      texts: [{c:1,t:"Two pits, two lies. Hop smart."},{c:14,t:"Door on the left? …sure it is."}] },
-
-    { name: "Rhythm Hell",
-      grid: ["                    ","     D    D   XX    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S              M E ","####################"],
-      texts: [{c:1,t:"Feel the rhythm. Or feel the spikes."},{c:13,t:"The door is RIGHT there. (it lies)"}] },
-
-    { name: "Spike Garden",
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S   ^    P     M E ","#############FF#####"],
-      texts: [{c:1,t:"Mind the garden. It bites."},{c:15,t:"Knock knock. (don't)"}] },
-
-    { name: "The Big Lie",
-      grid: ["                    ","         D   XX     ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S     P        M E ","####FF####FF########"],
-      texts: [{c:1,t:"Halfway. Every trick at once."},{c:8,t:"Don't trust ANYTHING down here."},{c:15,t:"Final door. Or is it. 😈"}] },
-
-    // ---- Theme 2: Overgrowth — scenery that LIES (decoys + phantom gaps) ----
-    { name: "Hall of Mirrors", spd: 1,
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S   BB    P    M E ","#######FF###########"],
-      texts: [{c:2,t:"Scary spikes! Better jump them, right? 🙄"},{c:7,t:"…or walk right through. They're fake, genius."},{c:14,t:"THIS door's real. probably. maybe. 😏"}] },
-
-    { name: "Phantom Floor", spd: 1,
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S              M E ","####HHHHHH##FF######"],
-      texts: [{c:2,t:"A bottomless pit! Definitely don't walk in. 😈"},{c:8,t:"…it was floor the whole time. you're welcome."},{c:11,t:"THIS gap is real though. (or is it 🙃)"}] },
-
-    { name: "Decoy Garden", spd: 1.1,
-      grid: ["                    ","             D      ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S    B    P    M E ","###HH###FF##########"],
-      texts: [{c:1,t:"Trust nothing. Not the floor, not the rocks."},{c:6,t:"that rock? fake. that gap? fake. that one? real. 🤡"},{c:13,t:"blade incoming. you're rolling your eyes, I can tell."}] },
-
-    { name: "Green Hell", spd: 1.15,
-      grid: ["                    ","          D         ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S      P       M E ","####HH######FF######"],
-      texts: [{c:1,t:"Jungle's end. Should be relaxing."},{c:8,t:"lol no."},{c:14,t:"so close. so very fake-close."}] },
-
-    // ---- Theme 3: The Machine — reversed controls + a runaway exit ----
-    { name: "Backwards", spd: 1, rev: [6, 13],
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S              M E ","#########FF#########"],
-      texts: [{c:1,t:"Clean corridor. What could go wrong."},{c:6,t:"wait… why is left now— 🙃 (controls reversed!)"},{c:14,t:"controls back to normal. you're welcome. eye-roll noted."}] },
-
-    { name: "Now You See It", spd: 1,
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S        E  M    @ ","####################"],
-      texts: [{c:1,t:"Door's right there. Walk over. Win. Easy."},{c:8,t:"🏃💨 the EXIT just RAN AWAY. of course it did."},{c:14,t:"not the fake door. chase the real one →"}] },
-
-    { name: "Double Trouble", spd: 1.2, rev: [10, 15],
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S      E    M    @ ","######FF############"],
-      texts: [{c:1,t:"Hop the gap, grab the door. simple."},{c:7,t:"runaway door + reversed controls. you're SO welcome 😈"},{c:13,t:"left is right, right is wrong, the door is gone. enjoy 🙃"}] },
-
-    { name: "Machine Finale", spd: 1.1,
-      grid: ["                    ","     D        XX    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S     B        M E ","##########FF########"],
-      texts: [{c:1,t:"Mind the gears. And the rocks. And the floor."},{c:7,t:"rock = fake. relax. now the blades = VERY real."},{c:14,t:"one crusher between you and smugness."}] },
-
-    // ---- Theme 4: The Void — EVERYTHING, faster, meaner ----
-    { name: "Void Gate", spd: 1.3, rev: [6, 11],
-      grid: ["                    ","                    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S      P       M E ","####FF####FF########"],
-      texts: [{c:1,t:"The Void. It's been waiting for you."},{c:6,t:"controls reversed OVER a pit. yeah. we went there 😈"},{c:14,t:"deep breath. roll those eyes. jump."}] },
-
-    { name: "Hide & Seek", spd: 1.3,
-      grid: ["                    ","      D    D        ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S   B   E      @  M","####################"],
-      texts: [{c:1,t:"Decoy rock, two blades, one runaway door. go."},{c:7,t:"and it's gone. 🏃 told you. catch it."},{c:14,t:"M is a lie. the real one bolted right. 🙄"}] },
-
-    { name: "Everything Lies", spd: 1.35, rev: [13, 17],
-      grid: ["                    ","            D       ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S  B     P    M  E ","##HH##FF############"],
-      texts: [{c:1,t:"phantom gap, fake rock, real pit, blade, reverse. casual."},{c:6,t:"are you rolling your eyes yet? GOOD. 😈"},{c:13,t:"reversed for the finish. of course. you knew."}] },
-
-    { name: "The Devil's Lie", spd: 1.2, rev: [4, 8],
-      grid: ["                    ","         D    XX    ","                    ","                    ",
-             "                    ","                    ","                    ","                    ",
-             "                    ","                    "," S      P   E     @ ","##FF################"],
-      texts: [{c:1,t:"Last lie. Pit, reverse, blade, runaway door, crusher."},{c:4,t:"reversed. obviously. it's the finale, did you expect mercy?"},{c:11,t:"the door RUNS. 🏃 ONE more crusher. then bragging rights."}] },
-  ];
+  const LEVELS = window.LEVELS; // defined in levels.js
 
   // =====================================================================
   // DOM + canvas
@@ -192,11 +48,12 @@
   const submitStatus = document.getElementById("submit-status");
   const nameInput = document.getElementById("name-input");
   const geoLine = document.getElementById("geo-line");
+  const startBtn = document.getElementById("start-btn");
 
   const isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
   // QA-only level jump (?lvl=N) — honored on localhost only, so the public board stays honest
   let QA_LEVEL = 0;
-  try { if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) { const v = parseInt(new URLSearchParams(location.search).get("lvl")); if (v >= 1 && v <= 20) QA_LEVEL = v - 1; } } catch (e) {}
+  try { if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) { const v = parseInt(new URLSearchParams(location.search).get("lvl")); if (v >= 1 && v <= 50) QA_LEVEL = v - 1; } } catch (e) {}
 
   let renderScale = 1;
   function resize() {
@@ -294,6 +151,17 @@
   const sndStep = () => tone(420, 0.03, "square", 0.015, 380);
   const sndBreak = () => tone(200, 0.18, "sawtooth", 0.07, 90);
   const sndPop = () => { tone(900, 0.05, "square", 0.12, 200); tone(140, 0.16, "sawtooth", 0.10, 60, 0.02); };
+  // lava sizzle: a hiss of noise + low fizzle, then the usual sad trombone
+  function sndBurn() {
+    const a = audio(); if (a) { try {
+      const n = a.createBufferSource(), buf = a.createBuffer(1, a.sampleRate * 0.3, a.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+      const g = a.createGain(); g.gain.setValueAtTime(0.12, a.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.3);
+      n.buffer = buf; n.connect(g); g.connect(a.destination); n.start();
+    } catch (e) {} }
+    tone(180, 0.2, "sawtooth", 0.08, 70);
+    [330, 294, 262, 196].forEach((f, i) => tone(f, 0.24, "sawtooth", 0.09, f * 0.94, 0.14 + i * 0.15));
+  }
   // the troll death sting: sad descending trombone
   function sndDeath() {
     sndPop();
@@ -311,7 +179,7 @@
     const L = LEVELS[i];
     grid = L.grid;
     texts = (L.texts || []).map(o => ({ col: o.c, text: o.t }));
-    curTheme = THEMES[(L.theme != null ? L.theme : Math.floor(i / 4)) % THEMES.length];
+    curTheme = THEMES[(L.theme != null ? L.theme : Math.floor(i / 5)) % THEMES.length];
     const spd = L.spd || 1;
     reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
@@ -360,20 +228,22 @@
     exit = { ...exitHome }; exitTeleported = false; reverseActive = false; // reset the runaway door
   }
 
-  function die(popped) {
+  function die(popped, burned) {
     if (player.dead) return;
     player.dead = true; player.deathT = 0;
     deaths++; elDeaths.textContent = "DEATHS " + deaths;
-    shake = 16; hitStop = 0.06;
-    sndDeath();
-    // balloon shreds + confetti burst
+    shake = burned ? 20 : 16; hitStop = 0.06;
+    if (burned) sndBurn(); else sndDeath();
+    // balloon shreds + confetti burst (fire colours when burned in lava)
     const cx = player.x + PW / 2, cy = player.y + PH / 2;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < (burned ? 38 : 30); i++) {
       const a = (i / 30) * Math.PI * 2, sp = 160 + Math.random() * 360;
-      particles.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 120,
-        life: 0.7 + Math.random() * 0.6, r: 3 + Math.random() * 5,
-        col: Math.random() < 0.6 ? "#ff3b54" : (Math.random() < 0.5 ? "#ffcf5c" : "#ff5d9e"),
-        shred: Math.random() < 0.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12 });
+      const col = burned
+        ? (Math.random() < 0.5 ? "#ff7a18" : (Math.random() < 0.5 ? "#ffd14d" : "#ff3b1e"))
+        : (Math.random() < 0.6 ? "#ff3b54" : (Math.random() < 0.5 ? "#ffcf5c" : "#ff5d9e"));
+      particles.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (burned ? 200 : 120),
+        life: 0.7 + Math.random() * 0.6, r: 3 + Math.random() * 5, col,
+        shred: !burned && Math.random() < 0.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12 });
     }
   }
 
@@ -398,6 +268,7 @@
     const ch = grid[r][c];
     if (ch === "#") return true;
     if (ch === "H") return true;  // phantom gap: looks like a pit, is solid floor
+    if (ch === "G") return true;  // fake lava: looks molten, is actually safe floor
     if (ch === "F") return false; // fake floor: drawn solid, never holds you
     return false;
   }
@@ -484,6 +355,8 @@
       const ch = grid[r][c];
       if (ch === "^" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 14, TILE - 12, TILE - 14)) return "pop";
       if (ch === "M" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
+      // real lava: surface is deadly (top ~60% of the tile so the floor edge stays fair)
+      if (ch === "L" && overlap(player.x, player.y, PW, PH, c * TILE, r * TILE + 8, TILE, TILE - 8)) return "burn";
     }
     return null; // real exit (incl. the runaway one) is checked from the `exit` object in step()
   }
@@ -513,8 +386,6 @@
       const big = pendingBig; player.vy = -(big ? BIG_JUMP : JUMP);
       player.onGround = false; player.coyote = 0; player.jumpBuf = 0; pendingBig = false;
       sndJump(big);
-      for (let i = 0; i < (big ? 10 : 5); i++) particles.push({ x: player.x + PW / 2 + (Math.random() - .5) * 16,
-        y: player.y + PH, vx: (Math.random() - .5) * 90, vy: Math.random() * 60, life: 0.3, r: 2.5, col: "#ffffff" });
     }
     if (!keys.jump && player.vy < 0) player.vy += GRAVITY * dt * 0.9; // variable height
     player.vy = Math.min(MAX_FALL, player.vy + GRAVITY * dt);
@@ -523,24 +394,17 @@
     player.onGround = false;
     moveAxis(player.vx * dt, 0);
     moveAxis(0, player.vy * dt);
-    if (!wasGround && player.onGround) { // landed
-      player.landT = 0; sndLand();
-      for (let i = 0; i < 6; i++) particles.push({ x: player.x + PW / 2 + (Math.random() - .5) * 18,
-        y: player.y + PH, vx: (Math.random() - .5) * 120, vy: -Math.random() * 40, life: 0.3, r: 2.5, col: "#c9c9d6" });
-    }
+    if (!wasGround && player.onGround) { player.landT = 0; sndLand(); } // landed (squash handles the juice; no dust puffs)
     player.landT += dt;
-    // running dust + step sfx
-    if (player.onGround && Math.abs(player.vx) > 60) {
-      player.runCycle += Math.abs(player.vx) * dt * 0.04;
-      if (Math.random() < 0.12) particles.push({ x: player.x + PW / 2, y: player.y + PH, vx: -player.facing * 60 * Math.random(),
-        vy: -Math.random() * 20, life: 0.25, r: 2, col: "#6b6b86" });
-    }
+    // running animation (feet cycle only — no trailing dust)
+    if (player.onGround && Math.abs(player.vx) > 60) player.runCycle += Math.abs(player.vx) * dt * 0.04;
 
     if (player.y > H + 40) { die(false); return; }
     const td = updateTraps(dt); if (td) { die(td === 2); return; }
     const hit = checkTiles();
     if (hit === "pop") { die(true); return; }
     if (hit === "die") { die(false); return; }
+    if (hit === "burn") { die(false, true); return; }
     // runaway exit: get close and the REAL door bolts to its alt spot (once)
     if (exitAlt && !exitTeleported) {
       const ecx = exit.c * TILE + TILE / 2, ecy = exit.r * TILE + TILE / 2;
@@ -583,8 +447,8 @@
     const sky = g.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.55, T.sky[1]); sky.addColorStop(1, T.sky[2]);
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    // glow + orb (orb shifts across each 4-level zone)
-    const ox = W * (0.22 + 0.5 * ((levelIndex % 4) / 3));
+    // glow + orb (orb shifts across each 5-level world)
+    const ox = W * (0.22 + 0.5 * ((levelIndex % 5) / 4));
     const glow = g.createRadialGradient(ox, H * 0.26, 8, ox, H * 0.26, 150);
     glow.addColorStop(0, T.glow); glow.addColorStop(0.5, T.glow); glow.addColorStop(1, "transparent");
     g.fillStyle = glow; g.fillRect(0, 0, W, H);
@@ -675,12 +539,13 @@
       ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, H); ctx.moveTo(rx + rw, 0); ctx.lineTo(rx + rw, H); ctx.stroke();
     }
 
-    // fake floors (drawn IDENTICAL to solid — the trick) + decoy platforms + fake doors
+    // fake floors (drawn IDENTICAL to solid — the trick) + decoy platforms + fake doors + lava
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "F" && !collapsed.has(c + "," + r)) drawBlockTo(ctx, x, y);
       else if (ch === "O") drawFakePlatform(x, y);
       else if (ch === "M") drawDoor(x, y, false);
+      else if (ch === "L" || ch === "G") drawLava(x, y, r); // L deadly, G safe — drawn identically (the troll)
     }
     if (exit) drawDoor(exit.c * TILE, exit.r * TILE, true); // the real (possibly runaway) door
     for (const t of traps) {
@@ -727,20 +592,79 @@
     GRAD.spike.addColorStop(0, "#ff8aa0"); GRAD.spike.addColorStop(1, "#c01030");
     GRAD.guil = ctx.createLinearGradient(0, 0, 0, 420);
     GRAD.guil.addColorStop(0, "#cfd2db"); GRAD.guil.addColorStop(1, "#ff5d73");
+    GRAD.lava = ctx.createLinearGradient(0, 6, 0, TILE);
+    GRAD.lava.addColorStop(0, "#ff9b2e"); GRAD.lava.addColorStop(0.45, "#ff5a14"); GRAD.lava.addColorStop(1, "#6e1102");
   }
   function drawFakePlatform(x, y) { ctx.fillStyle = "#33324e"; ctx.fillRect(x, y + 6, TILE, 13); ctx.fillStyle = "#43425f"; ctx.fillRect(x, y + 6, TILE, 4); }
+  // molten lava (animated). L = deadly, G = safe — drawn identically so you can't tell which lies.
+  function drawLava(x, y, row) {
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = GRAD.lava; ctx.fillRect(0, 6, TILE, TILE - 6);
+    // glowing molten crust on top
+    const t = animTime;
+    ctx.fillStyle = "#ffd86a"; ctx.globalAlpha = 0.85; ctx.fillRect(0, 6, TILE, 2); ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffb24d";
+    for (let i = 0; i < 4; i++) {
+      const bx = (i * 11 + (x * 0.7)) % TILE;
+      const by = 9 + Math.sin(t * 2.4 + i * 1.7 + x) * 2.5;
+      const br = 1 + (Math.sin(t * 3.1 + i * 2 + row) * 0.5 + 0.8);
+      ctx.globalAlpha = 0.35 + 0.45 * (Math.sin(t * 4 + i + x) * 0.5 + 0.5);
+      ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // heat shimmer rising
+    ctx.fillStyle = "rgba(255,170,80,0.18)";
+    for (let i = 0; i < 2; i++) { const hx = ((i * 19 + x + t * 14) % TILE); ctx.fillRect(hx, 0, 2, 6); }
+    ctx.restore();
+  }
   function drawSpikeColumn(x, y, h) {
     ctx.save(); ctx.translate(x, y); ctx.fillStyle = GRAD.spike;
     const n = 4, w = TILE / n;
     for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.moveTo(i * w, h); ctx.lineTo(i * w + w / 2, 0); ctx.lineTo((i + 1) * w, h); ctx.closePath(); ctx.fill(); }
     ctx.restore();
   }
+  // Falling hazard — themed "shard" instead of the old arrow/blade. Style per world:
+  //  ice = icicle, saw = spinning sawblade, thorn = barbed vine, crystal = shard, blade = stone spike.
   function drawGuillotine(x, y, len) {
-    if (len < 3) { ctx.fillStyle = "#4a4a5a"; ctx.fillRect(x + 8, y, TILE - 16, 8); return; }
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = "#6a6a7a"; ctx.fillRect(TILE / 2 - 3, 0, 6, len - 16);
-    ctx.fillStyle = GRAD.guil; ctx.beginPath(); ctx.moveTo(5, len - 18); ctx.lineTo(TILE / 2, len); ctx.lineTo(TILE - 5, len - 18); ctx.closePath(); ctx.fill();
-    ctx.restore();
+    const cxm = x + TILE / 2, haz = curTheme.haz || "blade", spk = curTheme.spk || ["#eef0f6", "#9498a6"];
+    // ceiling mount the shard hangs from
+    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(x + 7, y, TILE - 14, 5);
+    if (len < 5) { ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, y + 3, 8, Math.max(2, len)); return; }
+    const tipY = y + len, topY = y + 3, halfW = 8;
+    if (haz === "saw") {
+      // chain + spinning sawblade at the tip
+      ctx.strokeStyle = "#5a5a6a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cxm, topY); ctx.lineTo(cxm, tipY - 11); ctx.stroke();
+      const R = 13, cy = tipY - 10, teeth = 9;
+      ctx.fillStyle = spk[1]; ctx.beginPath();
+      for (let i = 0; i < teeth * 2; i++) { const ang = (i / (teeth * 2)) * 6.283 + animTime * 9, rr = i % 2 ? R : R * 0.66; ctx.lineTo(cxm + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#22222c"; ctx.beginPath(); ctx.arc(cxm, cy, 3, 0, 7); ctx.fill();
+      return;
+    }
+    if (haz === "thorn") {
+      ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, topY, 8, len - 6);
+      ctx.fillStyle = spk[0];
+      for (let yy = topY + 6; yy < tipY - 6; yy += 8) {
+        ctx.beginPath(); ctx.moveTo(cxm - 4, yy); ctx.lineTo(cxm - 11, yy + 3); ctx.lineTo(cxm - 4, yy + 7); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cxm + 4, yy); ctx.lineTo(cxm + 11, yy + 3); ctx.lineTo(cxm + 4, yy + 7); ctx.fill();
+      }
+      ctx.beginPath(); ctx.moveTo(cxm - 6, tipY - 8); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm + 6, tipY - 8); ctx.closePath(); ctx.fill();
+      return;
+    }
+    // ice / crystal / blade are all a slim tapering shard with a connecting stalk
+    const g = ctx.createLinearGradient(cxm, topY, cxm, tipY);
+    if (haz === "ice") { g.addColorStop(0, "#eaf7ff"); g.addColorStop(0.6, spk[1]); g.addColorStop(1, "#dff2ff"); }
+    else if (haz === "crystal") { g.addColorStop(0, spk[0]); g.addColorStop(1, spk[1]); }
+    else { g.addColorStop(0, "#9aa0ad"); g.addColorStop(0.55, spk[1]); g.addColorStop(1, "#b02030"); } // blade: stone→hot tip
+    ctx.fillStyle = "#5a5a6a"; ctx.fillRect(cxm - 2, topY, 4, len - 12); // stalk
+    ctx.globalAlpha = haz === "ice" ? 0.92 : 1; ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cxm - halfW, topY + 4); ctx.lineTo(cxm + halfW, topY + 4);
+    ctx.lineTo(cxm + 3, tipY - 12); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - 3, tipY - 12);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    // highlight streak
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.beginPath(); ctx.moveTo(cxm - 2, topY + 6); ctx.lineTo(cxm, topY + 6); ctx.lineTo(cxm, tipY - 8); ctx.closePath(); ctx.fill();
   }
   function drawCrusher(x, y, w) {
     ctx.fillStyle = "#4a2440"; ctx.fillRect(x, y, w, TILE);
@@ -825,20 +749,35 @@
     prevState = from; state = "lb";
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden");
     lbScreen.classList.remove("hidden");
-    const tbody = document.querySelector("#lb-table tbody");
-    tbody.innerHTML = "<tr><td colspan='5'>Loading…</td></tr>";
+    const podium = document.getElementById("lb-podium");
+    const list = document.getElementById("lb-list");
+    podium.innerHTML = ""; list.innerHTML = "<div class='lb-loading'>Loading the hall of survivors…</div>";
     const scores = await LB.fetchScores();
-    if (!scores.length) { tbody.innerHTML = "<tr><td colspan='5' style='padding:18px'>No finishers yet. Be the first 😈</td></tr>"; return; }
-    let html = "<tr><th>#</th><th></th><th>Name</th><th>Deaths</th><th>Time</th></tr>";
-    scores.slice(0, 50).forEach((s, i) => {
-      const cls = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : "";
-      const me = (s.name === playerName) ? " class='lb-me'" : "";
-      // s.* come from a publicly-writable blob — escape/coerce everything
-      html += `<tr${me}><td class="lb-rank ${cls}">${i + 1}</td><td class="lb-flag">${LB.flag(s.cc)}</td>` +
-              `<td class="lb-name">${escapeHtml(s.name)}</td><td>${escapeHtml(String(s.deaths ?? "?"))}</td>` +
-              `<td>${(Number(s.time) || 0).toFixed(1)}s</td></tr>`;
+    if (!scores.length) { list.innerHTML = "<div class='lb-empty'>No finishers yet.<br>Be the first to beat the Devil 😈</div>"; return; }
+    // Podium — top 3 (order: 2nd, 1st, 3rd for the classic stepped look)
+    const top = scores.slice(0, 3);
+    const order = top.length === 3 ? [1, 0, 2] : top.map((_, i) => i);
+    const medals = ["🥇", "🥈", "🥉"], place = ["first", "second", "third"];
+    podium.innerHTML = order.map(idx => {
+      const s = top[idx]; if (!s) return "";
+      const me = s.name === playerName ? " me" : "";
+      return `<div class="pod pod-${place[idx]}${me}">
+        <div class="pod-medal">${medals[idx]}</div>
+        <div class="pod-flag">${LB.flag(s.cc)}</div>
+        <div class="pod-name">${escapeHtml(s.name)}</div>
+        <div class="pod-stat"><b>${escapeHtml(String(s.deaths ?? "?"))}</b> deaths</div>
+        <div class="pod-stat pod-time">${(Number(s.time) || 0).toFixed(1)}s</div>
+      </div>`;
+    }).join("");
+    // List — ranks 4+ (plus a header row)
+    let html = "<div class='lb-row lb-head'><span class='r'>#</span><span class='f'></span><span class='n'>NAME</span><span class='d'>DEATHS</span><span class='t'>TIME</span></div>";
+    scores.slice(3, 60).forEach((s, i) => {
+      const rank = i + 4, me = s.name === playerName ? " lb-me" : "";
+      html += `<div class="lb-row${me}"><span class="r">${rank}</span><span class="f">${LB.flag(s.cc)}</span>` +
+              `<span class="n">${escapeHtml(s.name)}</span><span class="d">${escapeHtml(String(s.deaths ?? "?"))}</span>` +
+              `<span class="t">${(Number(s.time) || 0).toFixed(1)}s</span></div>`;
     });
-    tbody.innerHTML = html;
+    list.innerHTML = html;
   }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])); }
   function hideLeaderboard() {
@@ -850,9 +789,21 @@
   // =====================================================================
   // Start / wiring
   // =====================================================================
+  function nameValid() { return (nameInput.value || "").trim().length >= 1; }
+  function refreshStartBtn() {
+    const ok = nameValid();
+    startBtn.disabled = !ok;
+    startBtn.classList.toggle("disabled", !ok);
+  }
+  function rejectNoName() {
+    nameInput.focus();
+    nameInput.classList.remove("shake"); void nameInput.offsetWidth; nameInput.classList.add("shake");
+    geoLine.dataset.hint = "1"; geoLine.textContent = "👆 Enter a name to play";
+  }
   function startGame() {
+    if (!nameValid()) { rejectNoName(); return; }
     audio();
-    const n = (nameInput.value || "").trim().toUpperCase() || "ANON";
+    const n = nameInput.value.trim().toUpperCase().slice(0, 14);
     playerName = n; LB.setName(n);
     deaths = 0; elDeaths.textContent = "DEATHS 0";
     runStart = performance.now();
@@ -861,8 +812,12 @@
     state = "play";
     loadLevel(QA_LEVEL);
   }
-  document.getElementById("start-btn").addEventListener("click", startGame);
+  startBtn.addEventListener("click", startGame);
   document.getElementById("again-btn").addEventListener("click", startGame);
+  nameInput.addEventListener("input", () => {
+    refreshStartBtn();
+    if (nameValid() && geoLine.dataset.hint) { geoLine.dataset.hint = ""; geoLine.textContent = playerGeo.cc ? `${LB.flag(playerGeo.cc)} ${playerGeo.country}` : "Detecting your flag…"; }
+  });
   document.getElementById("lb-btn").addEventListener("click", () => showLeaderboard("title"));
   document.getElementById("lb-btn2").addEventListener("click", () => showLeaderboard("win"));
   document.getElementById("lb-back").addEventListener("click", hideLeaderboard);
@@ -878,18 +833,38 @@
     let dt = (now - last) / 1000; last = now;
     if (dt > 0.1) dt = 0.1;
     if (hitStop > 0) { hitStop -= dt; dt *= 0.15; }
-    if (!needsRotate) { acc += dt; while (acc >= DT) { step(DT); acc -= DT; } }
+    if (!needsRotate && !window.__DLman) { acc += dt; while (acc >= DT) { step(DT); acc -= DT; } }
     updateParticles(dt);
     render();
     if (state === "play") elTime.textContent = ((performance.now() - runStart) / 1000).toFixed(1) + "s";
     requestAnimationFrame(frameLoop);
   }
 
+  // Debug hook (localhost only) — lets the headless verifier read state & drive input.
+  try {
+    if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) {
+      window.__DL = () => ({ state, level: levelIndex + 1, deaths, px: player && player.x, py: player && player.y,
+        onGround: player && player.onGround, exitC: exit && exit.c, reverse: reverseActive });
+      window.__DLstart = (nm) => { nameInput.value = nm || "BOT"; startGame(); };
+      window.__DLkey = (k, down) => { if (k === "left") keys.left = down; else if (k === "right") keys.right = down; else if (k === "jump") { if (down) pressJump(); else releaseJump(); } };
+      // deterministic single-step driver (for replaying solver plans against the real engine)
+      window.__DLmanual = (on) => { window.__DLman = !!on; };
+      window.__DLtick = (dir, jumpStart, jumpHold) => {
+        keys.right = dir > 0; keys.left = dir < 0;
+        if (jumpStart) { player.jumpBuf = JUMP_BUF; pendingBig = false; }
+        keys.jump = !!jumpHold;
+        step(DT);
+        return { state, level: levelIndex + 1, px: player.x, py: player.y, dead: player.dead };
+      };
+    }
+  } catch (e) {}
+
   // boot
   resize();
   initGrads();
   nameInput.value = LB.getName();
+  refreshStartBtn();
   loadLevel(0); state = "title";
-  LB.geo().then(g => { playerGeo = g; geoLine.textContent = g.cc ? `${LB.flag(g.cc)} ${g.country}` : "Flag: unknown (offline)"; });
+  LB.geo().then(g => { playerGeo = g; if (!geoLine.dataset.hint) geoLine.textContent = g.cc ? `${LB.flag(g.cc)} ${g.country}` : "Flag: unknown (offline)"; });
   requestAnimationFrame(frameLoop);
 })();

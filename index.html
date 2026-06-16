@@ -60,9 +60,10 @@
 
     <!-- Leaderboard -->
     <div class="overlay hidden" id="lb-screen">
-      <h1 class="logo small">🏆 LEADERBOARD</h1>
-      <p class="sub">Fewest deaths wins. Ties broken by time. Finishers only.</p>
-      <div class="lb-wrap"><table id="lb-table"><tbody><tr><td>Loading…</td></tr></tbody></table></div>
+      <h1 class="logo small">🏆 HALL OF SURVIVORS</h1>
+      <p class="sub">Fewest deaths wins · ties broken by time · finishers only</p>
+      <div id="lb-podium" class="lb-podium"></div>
+      <div id="lb-list" class="lb-list"></div>
       <div class="lb-actions">
         <button class="btn ghost" id="lb-refresh">↻ REFRESH</button>
         <button class="btn" id="lb-back">BACK</button>
@@ -77,6 +78,7 @@
     </div>
   </div>
 
+  <script src="levels.js"></script>
   <script src="leaderboard.js"></script>
   <script src="game.js"></script>
 </body>

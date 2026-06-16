@@ -1,5 +1,27 @@
 # Devil's Lie — Requests Tracker
 
+## Round 4 (2026-06-16) — "balloon, 50 levels, lava, shards, leaderboard, name-gate, no bugs" — ✅ ALL DONE
+
+1. [x] **Character** — kept the balloon, removed the trailing/jump/landing "bubble" particles that read as exhaust. Death burst kept (now fiery embers when burned in lava).
+2. [x] **Harder levels 6-8** — Frostbite world (Double Cross / Spike Garden / The Big Lie) reworked with multiple pits, timed shards + a crusher, spd 1.12–1.16. Verified solvable.
+3. [x] **Falling hazard redesign** — old "arrow/blade" replaced by **themed shards**: icicles (Frostbite/Abyss), stone blades (Hellpit/Inferno/Boneyard), spinning sawblades (Machine/Voltage), thorned vines (Overgrowth), crystals (Void/Nightmare).
+4. [x] **New surprises** — **lava** `L` (deadly, animated molten tiles, fiery death + sizzle SFX) and **fake lava** `G` (looks identical, is safe solid floor — the troll). Distributed across worlds 2, 5–10.
+5. [x] **50 levels / 10 worlds** — added 5 new worlds (Inferno, Abyss, Boneyard, Voltage, Nightmare) + themes; difficulty ramps spd 1.0→1.78; theme changes every 5 levels. Levels + themes extracted to `levels.js` (single source of truth).
+6. [x] **Leaderboard redesign** — "Hall of Survivors": gold/silver/bronze **podium** for the top 3 (stepped, medals, flags) + a styled list for ranks 4+; your row highlighted.
+7. [x] **Name required** — PLAY is disabled until a name is entered; clicking it empty shakes the field with a hint.
+8. [x] **Bug pass + cross-device** — zero JS errors swept across all 50 levels; boot verified on phone / tablet / desktop viewports.
+9. [x] **Touch controls overlap** — buttons made translucent (≈50% until pressed) and tucked into the corners so they no longer hide the balloon / play area (from the reported screenshot).
+
+### Verification — ✅ all passed
+- [x] **All 50 levels proven solvable** by an A\* search over a frame-exact physics replica (`/tmp/dltest/sim.js`), normal jumps only.
+- [x] **Solver plans replayed in the REAL engine** (headless browser, deterministic `__DLtick` stepping) — 9/9 sampled levels reached the exit incl. L50 → win screen. Confirms the simulator is faithful.
+- [x] Zero JS errors during live play across all 50 levels; clean boot on 3 device sizes.
+- [x] Name-gate, leaderboard podium, lava/shard/fake-lava rendering all visually confirmed via screenshots.
+
+### Notes
+- `levels.js` is shared by the game (`window.LEVELS/THEMES`) and the Node verifier (`module.exports`).
+- Localhost-only debug hooks in `game.js` (`window.__DL*`) drive the verifier; inert on the public site.
+
 ## Round 3 (2026-06-16) — "20 levels, harder, changing scenery, MORE troll" — ✅ ALL DONE
 
 - [x] **20 levels total**, difficulty steadily increasing (spd ramps 1.0→1.2; more/stacked traps).
