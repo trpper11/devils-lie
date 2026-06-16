@@ -11,7 +11,8 @@ Rage, then laugh.
 Play as a living red **balloon** — eyes, little feet, squash & stretch, and it
 bursts into shreds (or embers, in lava) when a trap pops it. Works on desktop
 (full-screen) and phones (landscape + translucent touch controls). Your name +
-country flag go on a global leaderboard ranked by fewest deaths.
+country flag go on a global leaderboard the moment you start — finishers rank
+first (fewest deaths, then time), everyone else by how far they got.
 
 ## Controls
 - **← → / A D** — move
@@ -28,7 +29,9 @@ Soft, playful background music plays by default — toggle it any time with the 
 |---|---|
 | Solid floor | **Fake floor** — drops you the instant you touch it |
 | Flat ground | **Popup spikes** — spring up as you get close |
-| Empty ceiling | **Falling shards** on a rhythm (themed: icicles, blades, sawblades, crystals, thorns) — time your run |
+| Empty ceiling | **Falling shards** — a piece forms, then drops & shatters on a rhythm (themed: icicles, blades, sawblades, crystals, thorns). Watch the floor-target |
+| A block on chains | **Crusher** that slams down from above — never under it |
+| The whole level | Sometimes **multi-story** — drop through a hole into a **basement** to find the real exit |
 | A wall | **Crusher** that slams the floor |
 | The exit door | **Fake exit** — kills you. The real one is elsewhere. |
 | A platform | **Fall-through** — you drop right past it |

@@ -1,5 +1,18 @@
 # Devil's Lie — Requests Tracker
 
+## Round 7 (2026-06-16) — "real lava, falling shards, chained crushers, all-players board, multi-story" — ✅ ALL DONE
+
+1. [x] **Real burning lava** — rewrote `drawLava`: flowing glowing surface wave, drifting dark cooled-crust patches, bubbles that swell & pop, and flame tongues licking up off the surface. No longer a flat gimmick.
+2. [x] **Falling shards (justified by gameplay)** — the old extend/retract "guillotine" is now a real **falling piece**: it forms at the ceiling (telegraph + a red floor-target showing where it'll land), then **drops under gravity, shatters on the floor** (shatter particles), and a new one forms next cycle. Deadly only while falling. Themed per world (icicle/blade/saw/crystal/thorn).
+3. [x] **Crushers on chains** — `drawCrusher` now hangs the block from a ceiling bracket on two visible chains, so it clearly reads as "slams down from above — don't be under it / don't jump it."
+4. [x] **All-players leaderboard** — `leaderboard.js` rewritten: **everyone who presses PLAY** goes on the board, not just finishers. Each browser gets a stable id; the row updates on start and on every level reached (throttled network writes). Ranking = finishers first (deaths, then time), then everyone still trying by **furthest level**. Board shows 🏁 time for finishers and "Lv N" for in-progress players.
+5. [x] **Multi-story / basement levels** — added a **vertical camera** + variable level height (`LROWS`). Levels can be taller than one screen with a dark "underground". Two new drop-into-the-basement levels: **The Basement** (L24) and **The Undercroft** (L48) — the surface door is a decoy; you drop through a hole into a lower floor and find the real exit down there.
+
+### Verification — ✅ all passed
+- [x] Shard + crusher + level-height changes mirrored into the physics verifier (now level-height-aware); **all 50 levels re-proven solvable** including the 2 multi-story levels.
+- [x] **The Basement replayed in the REAL engine** → cleared (player descended to the basement floor and reached the exit), confirming the camera/drop + simulator agree.
+- [x] Zero JS errors swept across all 50 levels; new lava/shard/crusher visuals + chained crusher + camera scroll confirmed via screenshots; all-players board functionally tested (in-progress + finishers both shown, persisted).
+
 ## Round 6 (2026-06-16) — "graphics/animation polish: controls, hitbox, smoothness" — ✅ ALL DONE
 
 1. [x] **Reliable controls + scheme** — rewrote keyboard input: **W / ↑ / Space = jump, A/D = left/right**, R = restart. Movement keys are tracked independently of game-state and **no longer cleared on respawn**, so a held key keeps you moving after dying/changing levels (the "WASD sometimes stop working" bug). Added a window-blur reset (no stuck keys) and made sure typing your name is never hijacked. **Double jump fixed**: the old double-tap "big jump" was effectively unreachable (2nd tap landed after the jump fired) — replaced with a real **mid-air double jump** (press jump again in the air, once per airtime; ~95px vs 59px single, verified).

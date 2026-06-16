@@ -8,6 +8,7 @@
 
   // ---- World (logical resolution; CSS-scaled to fit any screen) --------
   const TILE = 40, COLS = 20, ROWS = 12;
+  let LROWS = ROWS;        // rows in the CURRENT level (>12 for multi-story levels); set per level
   const W = COLS * TILE; // 800
   const H = ROWS * TILE; // 480
 
@@ -81,7 +82,7 @@
   let levelIndex = 0, deaths = 0, runStart = 0, runElapsed = 0;
   let player, traps, grid, texts, collapsed, textShown, activeText, activeTextT;
   let levelTime = 0, animTime = 0, particles = [], shake = 0, hitStop = 0;
-  let staticLayer = null, embers = [], GRAD = null, animDt = 1 / 60;
+  let staticLayer = null, embers = [], GRAD = null, animDt = 1 / 60, camY = 0;
   let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
@@ -256,14 +257,15 @@
     levelIndex = i;
     const L = LEVELS[i];
     grid = L.grid;
+    LROWS = grid.length; // multi-story levels are taller than one screen
     texts = (L.texts || []).map(o => ({ col: o.c, text: o.t }));
     curTheme = THEMES[(L.theme != null ? L.theme : Math.floor(i / 5)) % THEMES.length];
     const spd = L.spd || 1;
     reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
     exit = exitAlt = null; exitTeleported = false;
-    let start = { c: 1, r: ROWS - 2 };
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    let start = { c: 1, r: LROWS - 2 };
+    for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c];
       if (ch === "S") start = { c, r };
       else if (ch === "E") exit = { c, r };
@@ -273,7 +275,7 @@
       else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6 / spd, down: 1.0, off: 0 });
     }
     traps = mergeCrushers(traps);
-    exitHome = exit ? { c: exit.c, r: exit.r } : { c: COLS - 2, r: ROWS - 2 };
+    exitHome = exit ? { c: exit.c, r: exit.r } : { c: COLS - 2, r: LROWS - 2 };
     if (!exit) exit = { ...exitHome };
     player = player || {};
     player.startX = start.c * TILE + (TILE - PW) / 2;
@@ -333,7 +335,7 @@
     winStats.textContent = `Beat all ${LEVELS.length} levels in ${runElapsed.toFixed(1)}s with ${deaths} death${deaths === 1 ? "" : "s"}.`;
     submitStatus.textContent = "Saving your score…";
     winScreen.classList.remove("hidden");
-    LB.submit({ name: playerName, cc: playerGeo.cc, country: playerGeo.country, deaths, time: +runElapsed.toFixed(1) })
+    LB.finish({ name: playerName, cc: playerGeo.cc, country: playerGeo.country, deaths, time: +runElapsed.toFixed(1), totalLevels: LEVELS.length })
       .then(ok => { submitStatus.textContent = ok ? "✓ Score saved to the global leaderboard." : "⚠ Saved locally (couldn't reach global board)."; })
       .catch(() => { submitStatus.textContent = "⚠ Saved locally only."; });
   }
@@ -343,7 +345,7 @@
   // =====================================================================
   function solidAt(c, r) {
     if (c < 0 || c >= COLS) return true;
-    if (r < 0 || r >= ROWS) return false;
+    if (r < 0 || r >= LROWS) return false;
     const ch = grid[r][c];
     if (ch === "#") return true;
     if (ch === "H") return true;  // phantom gap: looks like a pit, is solid floor
@@ -375,11 +377,14 @@
   function overlap(ax, ay, aw, ah, bx, by, bw, bh) { return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by; }
 
   // ---- trap rhythms ----
-  function guillotineExtend(t) {
-    const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
-    if (p < dp * 0.4) return p / (dp * 0.4);
-    if (p < dp) return 1;
-    return Math.max(0, 1 - (p - dp) / (1 - dp));
+  // Falling shard: a piece forms at the ceiling (telegraph), then DROPS under gravity
+  // to the floor and shatters, then a new one forms next cycle. Deadly only while falling.
+  const SHARD_WARN = 0.36, SHARD_FALL = 0.5;
+  function shardState(t) {
+    const cyc = (levelTime + t.off) % t.period, ceil = t.r * TILE, floorTop = (LROWS - 1) * TILE;
+    if (cyc < SHARD_WARN) return { phase: "warn", k: cyc / SHARD_WARN, y: ceil };
+    if (cyc < SHARD_WARN + SHARD_FALL) { const k = (cyc - SHARD_WARN) / SHARD_FALL; return { phase: "fall", k, y: ceil + k * k * (floorTop - ceil) }; }
+    return { phase: "gone", k: 0, y: ceil };
   }
   function crusherDown(t) {
     const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
@@ -387,9 +392,7 @@
     if (p < dp) return 1;
     return Math.max(0, 1 - (p - dp) / (1 - dp));
   }
-  // guillotine/crusher now reach the FLOOR so a grounded runner must time them
-  function guillotineLen(t, f) { return (ROWS - 1 - t.r) * TILE * f; }
-  function crusherTravel(t) { return (ROWS - 1 - t.r) * TILE; }
+  function crusherTravel(t) { return (LROWS - 1 - t.r) * TILE; }
 
   function updateTraps(dt) {
     const px = player.x, py = player.y; let dead = 0, hazardNear = 0;
@@ -405,9 +408,15 @@
         if (t.up > 0.12) { const sh = TILE * 0.85 * t.up;
           if (overlap(hx, hy, hw, hh, tx + 6, ty + TILE - sh, TILE - 12, sh)) dead = 2; }
       } else if (t.type === "guillotine") {
-        const f = guillotineExtend(t), len = guillotineLen(t, f);
-        if (Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.4) hazardNear = 1;
-        if (f > 0.05 && overlap(hx, hy, hw, hh, tx + 8, ty, TILE - 16, len)) dead = 2;
+        const s = shardState(t);
+        if (s.phase !== "gone" && Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.2) hazardNear = 1;
+        if (s.phase === "fall" && overlap(hx, hy, hw, hh, tx + 8, s.y, TILE - 16, TILE - 4)) dead = 2;
+        // shatter burst when the piece reaches the floor (once per fall cycle)
+        const cycNum = Math.floor((levelTime + t.off) / t.period);
+        if (s.phase === "gone" && t.shatterCyc !== cycNum) {
+          t.shatterCyc = cycNum; sndBreak();
+          for (let i = 0; i < 7; i++) particles.push({ x: tx + TILE / 2, y: (LROWS - 1) * TILE, vx: (Math.random() - .5) * 220, vy: -Math.random() * 160, life: 0.4, r: 2.5, col: curTheme.spk ? curTheme.spk[0] : "#cfd2db" });
+        }
       } else if (t.type === "crusher") {
         const f = crusherDown(t), w = (t.w || 1) * TILE, by = ty + crusherTravel(t) * f;
         if (overlap(px, py, PW, PH, tx - 6, ty, w + 12, by - ty + TILE + 8)) hazardNear = 1;
@@ -418,7 +427,7 @@
     const fc1 = Math.floor(px / TILE), fc2 = Math.floor((px + PW - 1) / TILE);
     const fr1 = Math.floor(py / TILE), fr2 = Math.floor((py + PH - 1) / TILE);
     for (let r = fr1; r <= fr2; r++) for (let c = fc1; c <= fc2; c++)
-      if (r >= 0 && r < ROWS && grid[r] && grid[r][c] === "F" && !collapsed.has(c + "," + r)) breakFloor(c, r);
+      if (r >= 0 && r < LROWS && grid[r] && grid[r][c] === "F" && !collapsed.has(c + "," + r)) breakFloor(c, r);
     // ease fear up and down so the face never snaps (was a hard jump to 1)
     player.fear += ((hazardNear ? 1 : 0) - player.fear) * (hazardNear ? 0.18 : 0.08);
     return dead; // 0 none, 1 die, 2 die-by-spike (pop)
@@ -436,7 +445,7 @@
     const c1 = Math.floor(hx / TILE), c2 = Math.floor((hx + hw - 1) / TILE);
     const r1 = Math.floor(hy / TILE), r2 = Math.floor((hy + hh - 1) / TILE);
     for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) {
-      if (c < 0 || c >= COLS || r < 0 || r >= ROWS) continue;
+      if (c < 0 || c >= COLS || r < 0 || r >= LROWS) continue;
       const ch = grid[r][c];
       // spikes are deadly right up to their tips now — touch a needle, pop instantly
       if (ch === "^" && overlap(hx, hy, hw, hh, c * TILE + 5, r * TILE + 9, TILE - 10, TILE - 9)) return "pop";
@@ -497,7 +506,7 @@
     // running animation (feet cycle only — no trailing dust)
     if (player.onGround && Math.abs(player.vx) > 60) player.runCycle += Math.abs(player.vx) * dt * 0.04;
 
-    if (player.y > H + 40) { die(false); return; }
+    if (player.y > LROWS * TILE + 40) { die(false); return; }
     const td = updateTraps(dt); if (td) { die(td === 2); return; }
     const hit = checkTiles();
     if (hit === "pop") { die(true); return; }
@@ -537,14 +546,21 @@
   // Static background layer (cached per level for performance)
   // =====================================================================
   function buildStaticLayer() {
-    const T = curTheme;
+    const T = curTheme, levelH = LROWS * TILE;
     staticLayer = document.createElement("canvas");
-    staticLayer.width = W; staticLayer.height = H;
+    staticLayer.width = W; staticLayer.height = levelH;
     const g = staticLayer.getContext("2d");
-    // sky
+    // sky over the first screen…
     const sky = g.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.55, T.sky[1]); sky.addColorStop(1, T.sky[2]);
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    // …then dark "underground" below it for multi-story / basement levels
+    if (levelH > H) {
+      g.fillStyle = T.sky[2]; g.fillRect(0, H, W, levelH - H);
+      const ug = g.createLinearGradient(0, H, 0, levelH);
+      ug.addColorStop(0, "rgba(0,0,0,0)"); ug.addColorStop(1, "rgba(0,0,0,0.6)");
+      g.fillStyle = ug; g.fillRect(0, H, W, levelH - H);
+    }
     // glow + orb (orb shifts across each 5-level world)
     const ox = W * (0.22 + 0.5 * ((levelIndex % 5) / 4));
     const glow = g.createRadialGradient(ox, H * 0.26, 8, ox, H * 0.26, 150);
@@ -564,7 +580,7 @@
     g.fillStyle = T.sil;
     for (let x = 0; x < W; x += 22) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + 11, H - 22 - (x % 60) * 0.2); g.lineTo(x + 22, H); g.closePath(); g.fill(); }
     // static tiles: solid #, spikes ^, decoy B; H draws NOTHING (looks like a gap, is floor)
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "#") drawBlockTo(g, x, y);
       else if (ch === "^") drawSpikeTo(g, x, y);
@@ -624,29 +640,38 @@
       player.rx = player.prevX + (player.x - player.prevX) * a;
       player.ry = player.prevY + (player.y - player.prevY) * a;
     }
+    // vertical camera — follows the balloon in tall (multi-story) levels; 0 when the level fits one screen
+    const levelH = LROWS * TILE, camMax = Math.max(0, levelH - H);
+    const camTarget = Math.max(0, Math.min(camMax, (player && state === "play" ? (player.ry !== undefined ? player.ry : player.y) : 0) + PH / 2 - H / 2));
+    camY += (camTarget - camY) * Math.min(1, animDt * 9);
+    if (camY < 0.4) camY = 0; if (Math.abs(camY - camTarget) < 0.4) camY = camTarget;
+
     ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
     let ox = 0, oy = 0;
     if (shake > 0) { ox = (Math.random() - .5) * shake; oy = (Math.random() - .5) * shake; ctx.translate(ox, oy); }
 
-    if (staticLayer) ctx.drawImage(staticLayer, 0, 0, W, H);
+    // background — draw the visible vertical slice of the (possibly tall) static layer
+    if (staticLayer) ctx.drawImage(staticLayer, 0, camY, W, H, 0, 0, W, H);
     else { ctx.fillStyle = "#0d0d16"; ctx.fillRect(0, 0, W, H); }
 
-    // embers
+    // embers (screen-space ambient)
     ctx.fillStyle = curTheme.ember;
     for (const e of embers) { ctx.globalAlpha = 0.3 + 0.4 * Math.abs(Math.sin((animTime + e.o) * e.w)); ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1;
 
-    // reverse-control zone tint (the floor's normal; your controls aren't)
+    ctx.save(); ctx.translate(0, -camY); // ---- world space (scrolls with the camera) ----
+
+    // reverse-control zone tint (full level height)
     if (reverseRange) {
       const rx = reverseRange[0], rw = reverseRange[1] - reverseRange[0];
       ctx.fillStyle = reverseActive ? "rgba(180,80,255,0.20)" : "rgba(150,80,255,0.07)";
-      ctx.fillRect(rx, 0, rw, H);
+      ctx.fillRect(rx, 0, rw, levelH);
       ctx.strokeStyle = "rgba(200,140,255,0.4)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, H); ctx.moveTo(rx + rw, 0); ctx.lineTo(rx + rw, H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, levelH); ctx.moveTo(rx + rw, 0); ctx.lineTo(rx + rw, levelH); ctx.stroke();
     }
 
     // fake floors (drawn IDENTICAL to solid — the trick) + decoy platforms + fake doors + lava
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "F" && !collapsed.has(c + "," + r)) drawBlockTo(ctx, x, y);
       else if (ch === "O") drawFakePlatform(x, y);
@@ -658,17 +683,11 @@
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
       if (t.type === "popup" && t.up > 0.02) drawSpikeColumn(tx, ty + TILE - TILE * 0.85 * t.up, TILE * 0.85 * t.up);
-      else if (t.type === "guillotine") drawGuillotine(tx, ty, guillotineLen(t, guillotineExtend(t)));
-      else if (t.type === "crusher") drawCrusher(tx, ty + crusherTravel(t) * crusherDown(t), (t.w || 1) * TILE);
+      else if (t.type === "guillotine") drawShard(tx, ty, shardState(t));
+      else if (t.type === "crusher") drawCrusher(tx, ty + crusherTravel(t) * crusherDown(t), (t.w || 1) * TILE, ty);
     }
 
     if (!player.dead && state === "play") drawPlayer();
-
-    // reversed-controls banner
-    if (reverseActive) {
-      ctx.fillStyle = "#e0b0ff"; ctx.font = "bold 14px Poppins, sans-serif"; ctx.textAlign = "center";
-      ctx.fillText("⇄  CONTROLS REVERSED  ⇄", (reverseRange[0] + reverseRange[1]) / 2, 116); ctx.textAlign = "left";
-    }
 
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.col;
@@ -677,6 +696,14 @@
       else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r || 3, 0, 7); ctx.fill(); }
     }
     ctx.globalAlpha = 1;
+
+    ctx.restore(); // ---- end world space; back to screen space ----
+
+    // reversed-controls banner (screen-space HUD)
+    if (reverseActive) {
+      ctx.fillStyle = "#e0b0ff"; ctx.font = "bold 14px Poppins, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("⇄  CONTROLS REVERSED  ⇄", (reverseRange[0] + reverseRange[1]) / 2, 116); ctx.textAlign = "left";
+    }
 
     if (activeText) {
       ctx.globalAlpha = Math.min(1, activeTextT * 2);
@@ -720,25 +747,47 @@
     ctx.beginPath(); ctx.moveTo(x + TILE / 2 - 5, capY + 9); ctx.lineTo(x + TILE / 2, capY + 4); ctx.lineTo(x + TILE / 2 + 5, capY + 9); ctx.stroke();
   }
   // molten lava (animated). L = deadly, G = safe — drawn identically so you can't tell which lies.
+  // Real molten lava: dark drifting crust, a flowing glowing surface wave, rising
+  // bubbles that swell & pop, and flame tongues licking up off the surface.
   function drawLava(x, y, row) {
+    const t = animTime, seed = x * 0.13 + row * 1.7;
     ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = GRAD.lava; ctx.fillRect(0, 6, TILE, TILE - 6);
-    // glowing molten crust on top
-    const t = animTime;
-    ctx.fillStyle = "#ffd86a"; ctx.globalAlpha = 0.85; ctx.fillRect(0, 6, TILE, 2); ctx.globalAlpha = 1;
-    ctx.fillStyle = "#ffb24d";
+    ctx.beginPath(); ctx.rect(-1, 4, TILE + 2, TILE - 3); ctx.clip(); // keep molten body inside the tile
+    // molten base
+    ctx.fillStyle = GRAD.lava; ctx.fillRect(0, 5, TILE, TILE - 5);
+    // flowing bright surface wave (the hot top of the pool)
+    const waveY = (xx) => 9 + Math.sin(xx * 0.32 + t * 2.6 + seed) * 1.8 + Math.sin(xx * 0.11 - t * 1.4) * 1.0;
+    ctx.fillStyle = "#ff7a1e"; ctx.beginPath(); ctx.moveTo(0, waveY(0));
+    for (let xx = 0; xx <= TILE; xx += 4) ctx.lineTo(xx, waveY(xx));
+    ctx.lineTo(TILE, TILE); ctx.lineTo(0, TILE); ctx.closePath(); ctx.fill();
+    // bright hot crest line
+    ctx.strokeStyle = "#ffe27a"; ctx.lineWidth = 2; ctx.beginPath();
+    for (let xx = 0; xx <= TILE; xx += 4) (xx ? ctx.lineTo(xx, waveY(xx)) : ctx.moveTo(xx, waveY(xx)));
+    ctx.stroke();
+    // dark cooled crust patches drifting across the surface
+    ctx.fillStyle = "rgba(48,12,6,0.6)";
+    for (let i = 0; i < 3; i++) {
+      const cw = 9 + i * 4, cx = ((i * 16 + t * (5 + i * 4) + seed * 9) % (TILE + cw)) - cw;
+      ctx.beginPath(); ctx.ellipse(cx + cw / 2, waveY(cx + cw / 2) + 3, cw / 2, 2.6, 0, 0, 7); ctx.fill();
+    }
+    // bubbles swelling up to the surface and popping
     for (let i = 0; i < 4; i++) {
-      const bx = (i * 11 + (x * 0.7)) % TILE;
-      const by = 9 + Math.sin(t * 2.4 + i * 1.7 + x) * 2.5;
-      const br = 1 + (Math.sin(t * 3.1 + i * 2 + row) * 0.5 + 0.8);
-      ctx.globalAlpha = 0.35 + 0.45 * (Math.sin(t * 4 + i + x) * 0.5 + 0.5);
+      const ph = ((t * 0.55 + i * 0.31 + seed * 0.1) % 1);
+      const bx = 5 + ((i * 13 + seed * 7) % (TILE - 10)), by = (TILE - 4) - ph * (TILE - 16), br = (1 - ph) * 2.4 + 0.5;
+      ctx.globalAlpha = 0.25 + 0.45 * (1 - ph); ctx.fillStyle = "#ffcf6a";
       ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    // heat shimmer rising
-    ctx.fillStyle = "rgba(255,170,80,0.18)";
-    for (let i = 0; i < 2; i++) { const hx = ((i * 19 + x + t * 14) % TILE); ctx.fillRect(hx, 0, 2, 6); }
     ctx.restore();
+    // flame tongues / embers rising ABOVE the surface (drawn unclipped, into the air)
+    ctx.save(); ctx.translate(x, y);
+    for (let i = 0; i < 3; i++) {
+      const ph = ((t * 0.9 + i * 0.41 + seed) % 1), fa = 1 - ph;
+      const fx = 7 + ((i * 15 + seed * 5) % (TILE - 14)), fy = 8 - ph * 13;
+      ctx.globalAlpha = fa * 0.55; ctx.fillStyle = ph < 0.5 ? "#ffb43a" : "#ff5e16";
+      ctx.beginPath(); ctx.ellipse(fx, fy, 2.0 * fa + 0.5, 4.2 * fa + 1, 0, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.restore();
   }
   function drawSpikeColumn(x, y, h) {
     ctx.save(); ctx.translate(x, y); ctx.fillStyle = GRAD.spike;
@@ -748,51 +797,66 @@
   }
   // Falling hazard — themed "shard" instead of the old arrow/blade. Style per world:
   //  ice = icicle, saw = spinning sawblade, thorn = barbed vine, crystal = shard, blade = stone spike.
-  function drawGuillotine(x, y, len) {
-    const cxm = x + TILE / 2, haz = curTheme.haz || "blade", spk = curTheme.spk || ["#eef0f6", "#9498a6"];
-    // ceiling mount the shard hangs from
-    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(x + 7, y, TILE - 14, 5);
-    if (len < 5) { ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, y + 3, 8, Math.max(2, len)); return; }
-    const tipY = y + len, topY = y + 3, halfW = 8;
-    if (haz === "saw") {
-      // chain + spinning sawblade at the tip
-      ctx.strokeStyle = "#5a5a6a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cxm, topY); ctx.lineTo(cxm, tipY - 11); ctx.stroke();
-      const R = 13, cy = tipY - 10, teeth = 9;
-      ctx.fillStyle = spk[1]; ctx.beginPath();
-      for (let i = 0; i < teeth * 2; i++) { const ang = (i / (teeth * 2)) * 6.283 + animTime * 9, rr = i % 2 ? R : R * 0.66; ctx.lineTo(cxm + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "#22222c"; ctx.beginPath(); ctx.arc(cxm, cy, 3, 0, 7); ctx.fill();
+  // Falling shard: forms at the ceiling (telegraph) then drops & shatters on the floor.
+  function drawShard(tx, ty, s) {
+    const cxm = tx + TILE / 2, haz = curTheme.haz || "blade", spk = curTheme.spk || ["#eef0f6", "#9498a6"];
+    const floorTop = (LROWS - 1) * TILE;
+    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fillRect(tx + 7, ty, TILE - 14, 5); // ceiling mount
+    // floor impact target — telegraphs WHERE it will land (and that it's a faller, not a wall)
+    if (s.phase !== "gone") {
+      const inten = s.phase === "warn" ? s.k * 0.6 : 1;
+      ctx.save(); ctx.globalAlpha = 0.3 * inten; ctx.fillStyle = "#ff5a5a";
+      ctx.beginPath(); ctx.ellipse(cxm, floorTop + TILE - 3, 11, 3, 0, 0, 7); ctx.fill(); ctx.restore();
+    }
+    if (s.phase === "gone") { // remnant nub left at the ceiling
+      ctx.fillStyle = spk[1]; ctx.beginPath(); ctx.moveTo(cxm - 5, ty + 4); ctx.lineTo(cxm + 5, ty + 4); ctx.lineTo(cxm, ty + 11); ctx.closePath(); ctx.fill();
       return;
+    }
+    let topY = s.y;
+    if (s.phase === "warn") { topY = ty + Math.sin(animTime * 42) * 1.3 * s.k; } // shivers before it drops
+    else { ctx.globalAlpha = 0.3; ctx.strokeStyle = spk[0]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cxm, topY - 14); ctx.lineTo(cxm, topY); ctx.stroke(); ctx.globalAlpha = 1; } // fall streak
+    drawShardPiece(cxm, topY, haz, spk);
+  }
+  function drawShardPiece(cxm, topY, haz, spk) {
+    const h = TILE - 4, tipY = topY + h;
+    if (haz === "saw") {
+      const R = 12, cy = topY + R + 1; ctx.fillStyle = spk[1]; ctx.beginPath();
+      for (let i = 0; i < 18; i++) { const ang = (i / 18) * 6.283 + animTime * 12, rr = i % 2 ? R : R * 0.66; ctx.lineTo(cxm + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
+      ctx.closePath(); ctx.fill(); ctx.fillStyle = "#22222c"; ctx.beginPath(); ctx.arc(cxm, cy, 3, 0, 7); ctx.fill(); return;
     }
     if (haz === "thorn") {
-      ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, topY, 8, len - 6);
-      ctx.fillStyle = spk[0];
-      for (let yy = topY + 6; yy < tipY - 6; yy += 8) {
-        ctx.beginPath(); ctx.moveTo(cxm - 4, yy); ctx.lineTo(cxm - 11, yy + 3); ctx.lineTo(cxm - 4, yy + 7); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(cxm + 4, yy); ctx.lineTo(cxm + 11, yy + 3); ctx.lineTo(cxm + 4, yy + 7); ctx.fill();
+      ctx.fillStyle = spk[1]; ctx.fillRect(cxm - 4, topY, 8, h - 6); ctx.fillStyle = spk[0];
+      for (let yy = topY + 3; yy < tipY - 6; yy += 7) {
+        ctx.beginPath(); ctx.moveTo(cxm - 4, yy); ctx.lineTo(cxm - 10, yy + 3); ctx.lineTo(cxm - 4, yy + 6); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cxm + 4, yy); ctx.lineTo(cxm + 10, yy + 3); ctx.lineTo(cxm + 4, yy + 6); ctx.fill();
       }
-      ctx.beginPath(); ctx.moveTo(cxm - 6, tipY - 8); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm + 6, tipY - 8); ctx.closePath(); ctx.fill();
-      return;
+      ctx.beginPath(); ctx.moveTo(cxm - 6, tipY - 8); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm + 6, tipY - 8); ctx.closePath(); ctx.fill(); return;
     }
-    // ice / crystal / blade are all a slim tapering shard with a connecting stalk
     const g = ctx.createLinearGradient(cxm, topY, cxm, tipY);
     if (haz === "ice") { g.addColorStop(0, "#eaf7ff"); g.addColorStop(0.6, spk[1]); g.addColorStop(1, "#dff2ff"); }
     else if (haz === "crystal") { g.addColorStop(0, spk[0]); g.addColorStop(1, spk[1]); }
-    else { g.addColorStop(0, "#9aa0ad"); g.addColorStop(0.55, spk[1]); g.addColorStop(1, "#b02030"); } // blade: stone→hot tip
-    ctx.fillStyle = "#5a5a6a"; ctx.fillRect(cxm - 2, topY, 4, len - 12); // stalk
+    else { g.addColorStop(0, "#9aa0ad"); g.addColorStop(0.5, spk[1]); g.addColorStop(1, "#b02030"); }
     ctx.globalAlpha = haz === "ice" ? 0.92 : 1; ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(cxm - halfW, topY + 4); ctx.lineTo(cxm + halfW, topY + 4);
-    ctx.lineTo(cxm + 3, tipY - 12); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - 3, tipY - 12);
-    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-    // highlight streak
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.beginPath(); ctx.moveTo(cxm - 2, topY + 6); ctx.lineTo(cxm, topY + 6); ctx.lineTo(cxm, tipY - 8); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cxm - 8, topY + 2); ctx.lineTo(cxm + 8, topY + 2); ctx.lineTo(cxm + 3, tipY - 9); ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - 3, tipY - 9); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.moveTo(cxm - 2, topY + 4); ctx.lineTo(cxm, topY + 4); ctx.lineTo(cxm, tipY - 7); ctx.closePath(); ctx.fill();
   }
-  function drawCrusher(x, y, w) {
+  // Crusher — now hangs from CHAINS so it clearly reads as "slams down, don't be under it".
+  function drawCrusher(x, y, w, anchorY) {
+    const a = anchorY != null ? anchorY : y;
+    // ceiling bracket + two chains down to the block
+    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x + 2, a, w - 4, 4);
+    ctx.strokeStyle = "#7a7a88"; ctx.lineWidth = 2.5;
+    for (const cxp of [x + w * 0.3, x + w * 0.7]) {
+      ctx.beginPath();
+      for (let yy = a + 2; yy < y; yy += 6) { ctx.moveTo(cxp - 2, yy); ctx.lineTo(cxp + 2, yy + 3); }
+      ctx.stroke();
+      ctx.fillStyle = "#5a5a66"; ctx.beginPath(); ctx.arc(cxp, a + 2, 2, 0, 7); ctx.fill();
+    }
+    // the heavy block
     ctx.fillStyle = "#4a2440"; ctx.fillRect(x, y, w, TILE);
     ctx.fillStyle = "#62315a"; ctx.fillRect(x, y, w, 6);
-    ctx.fillStyle = "#ff5d73"; const n = Math.max(2, Math.round(w / 10));
+    ctx.fillStyle = "#2a1426"; ctx.fillRect(x, y, 3, TILE); ctx.fillRect(x + w - 3, y, 3, TILE); // bolts/edges
+    ctx.fillStyle = "#ff5d73"; const n = Math.max(2, Math.round(w / 10)); // spiked underside
     for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.moveTo(x + i * (w / n), y + TILE); ctx.lineTo(x + i * (w / n) + (w / n) / 2, y + TILE + 9); ctx.lineTo(x + (i + 1) * (w / n), y + TILE); ctx.closePath(); ctx.fill(); }
   }
   function drawDoor(x, y, real) {
@@ -885,7 +949,10 @@
     const list = document.getElementById("lb-list");
     podium.innerHTML = ""; list.innerHTML = "<div class='lb-loading'>Loading the hall of survivors…</div>";
     const scores = await LB.fetchScores();
-    if (!scores.length) { list.innerHTML = "<div class='lb-empty'>No finishers yet.<br>Be the first to beat the Devil 😈</div>"; return; }
+    if (!scores.length) { list.innerHTML = "<div class='lb-empty'>Nobody's played yet.<br>Be the first 😈</div>"; return; }
+    const total = LEVELS.length;
+    // a finisher shows their time; everyone still trying shows how far they got
+    const progressOf = (s) => s.finished ? `${(Number(s.time) || 0).toFixed(1)}s` : `Lv ${Math.min(total, Math.max(1, s.level || 1))}`;
     // Podium — top 3 (order: 2nd, 1st, 3rd for the classic stepped look)
     const top = scores.slice(0, 3);
     const order = top.length === 3 ? [1, 0, 2] : top.map((_, i) => i);
@@ -898,16 +965,17 @@
         <div class="pod-flag">${LB.flag(s.cc)}</div>
         <div class="pod-name">${escapeHtml(s.name)}</div>
         <div class="pod-stat"><b>${escapeHtml(String(s.deaths ?? "?"))}</b> deaths</div>
-        <div class="pod-stat pod-time">${(Number(s.time) || 0).toFixed(1)}s</div>
+        <div class="pod-stat pod-time">${s.finished ? "🏁 " : ""}${progressOf(s)}</div>
       </div>`;
     }).join("");
     // List — ranks 4+ (plus a header row)
-    let html = "<div class='lb-row lb-head'><span class='r'>#</span><span class='f'></span><span class='n'>NAME</span><span class='d'>DEATHS</span><span class='t'>TIME</span></div>";
-    scores.slice(3, 60).forEach((s, i) => {
+    let html = "<div class='lb-row lb-head'><span class='r'>#</span><span class='f'></span><span class='n'>NAME</span><span class='d'>DEATHS</span><span class='t'>PROGRESS</span></div>";
+    scores.slice(3, 100).forEach((s, i) => {
       const rank = i + 4, me = s.name === playerName ? " lb-me" : "";
+      const prog = s.finished ? `<span class="lb-done">🏁 ${(Number(s.time) || 0).toFixed(1)}s</span>` : `<span class="lb-prog">Lv ${Math.min(total, Math.max(1, s.level || 1))}</span>`;
       html += `<div class="lb-row${me}"><span class="r">${rank}</span><span class="f">${LB.flag(s.cc)}</span>` +
               `<span class="n">${escapeHtml(s.name)}</span><span class="d">${escapeHtml(String(s.deaths ?? "?"))}</span>` +
-              `<span class="t">${(Number(s.time) || 0).toFixed(1)}s</span></div>`;
+              `<span class="t">${prog}</span></div>`;
     });
     list.innerHTML = html;
   }
@@ -939,6 +1007,8 @@
     playerName = n; LB.setName(n);
     deaths = 0; elDeaths.textContent = "DEATHS 0";
     runStart = performance.now();
+    LB.startRun({ name: n, cc: playerGeo.cc, country: playerGeo.country }); // everyone goes on the board
+    if (QA_LEVEL > 0) LB.progress(QA_LEVEL + 1, 0);
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden"); lbScreen.classList.add("hidden");
     document.getElementById("settings-screen").classList.add("hidden");
     document.getElementById("stage-screen").classList.add("hidden");
@@ -958,6 +1028,7 @@
   };
   let pendingLevel = 0;
   function advanceTo(next) {
+    LB.progress(next + 1, deaths); // record how far they've gotten (non-finishers count too)
     if (STAGES[next]) { showStage(next); return; }
     loadLevel(next);
   }

@@ -204,6 +204,8 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius
   font-family: "Press Start 2P", monospace; font-size: 8px; }
 .lb-head .d, .lb-head .t, .lb-head .n { color: var(--gold); }
 .lb-row:nth-child(even):not(.lb-head) { background: rgba(255,255,255,.02); }
+.lb-done { color: var(--gold); font-weight: 700; }
+.lb-prog { color: #8fa6c8; }
 .lb-me { background: rgba(255,59,84,.16) !important; box-shadow: inset 3px 0 0 var(--red); }
 .lb-loading, .lb-empty { padding: 22px; text-align: center; color: #c9c9d6; font-size: 13px; line-height: 1.6; }
 .lb-actions { display: flex; gap: 10px; margin-top: 10px; }
