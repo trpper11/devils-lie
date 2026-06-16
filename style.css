@@ -61,6 +61,48 @@ canvas#game {
 }
 #fs-btn:active { transform: scale(.92); }
 
+/* ---------- Top-right icon buttons (music + settings) ---------- */
+#topbtns { position: absolute; top: 42px; right: 8px; z-index: 20; display: flex; gap: 6px; }
+.iconbtn {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(20,16,28,.5); color: var(--gold);
+  border: 1px solid rgba(255,255,255,.16);
+  font-size: 16px; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .06s ease, background .12s ease;
+}
+.iconbtn:hover { background: rgba(40,30,52,.7); }
+.iconbtn:active { transform: scale(.92); }
+.iconbtn.off { color: #7a7a8a; opacity: .8; }
+
+/* ---------- Settings panel ---------- */
+.settings-box { width: min(420px, 92vw); display: flex; flex-direction: column; gap: 16px; margin: 14px 0 4px; text-align: left; }
+.set-row { display: flex; flex-direction: column; gap: 8px; }
+.set-row > label { font-family: "Press Start 2P", monospace; font-size: 10px; color: #c9c9d6; letter-spacing: .3px; }
+.set-val { color: var(--gold); }
+.seg { display: flex; border: 1px solid rgba(255,255,255,.16); border-radius: 9px; overflow: hidden; }
+.seg button {
+  flex: 1; padding: 10px 6px; background: rgba(255,255,255,.03); color: #c9c9d6;
+  border: none; border-right: 1px solid rgba(255,255,255,.1); cursor: pointer;
+  font-family: "Poppins", sans-serif; font-weight: 700; font-size: 13px;
+}
+.seg button:last-child { border-right: none; }
+.seg button.sel { background: linear-gradient(180deg, var(--gold), #f0a92e); color: #1a0008; }
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 4px;
+  background: rgba(255,255,255,.14); outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--gold); cursor: pointer; border: 2px solid #1a0008; box-shadow: 0 0 8px rgba(255,207,92,.4);
+}
+input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--gold); cursor: pointer; border: 2px solid #1a0008; }
+.set-note { font-size: 11px; color: #8a8a9a; line-height: 1.5; margin-top: 2px; }
+
+/* ---------- Stage interstitial ---------- */
+.stage-kicker { font-family: "Press Start 2P", monospace; font-size: clamp(12px, 2.4vw, 18px);
+  color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; text-shadow: 0 0 16px rgba(255,207,92,.5); }
+
 /* ---------- Overlays ---------- */
 .overlay {
   position: absolute; inset: 0; z-index: 10;
@@ -173,23 +215,25 @@ canvas#game {
 #touch.hidden { display: none; }
 .t-left { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; }
 .t-right { position: absolute; right: 10px; bottom: 10px; }
+:root { --tbtn-opacity: 0.4; }
 .tbtn {
   pointer-events: auto;
   width: 58px; height: 58px; border-radius: 50%;
-  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.18);
-  color: rgba(255,255,255,.78); font-size: 24px; font-weight: 800; cursor: pointer;
+  /* dark, smoky glass — no longer a white blob that hides the balloon */
+  background: rgba(20,16,28,.45); border: 1.5px solid rgba(255,255,255,.22);
+  color: rgba(255,255,255,.8); font-size: 24px; font-weight: 800; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  opacity: .5; transition: opacity .12s ease, background .12s ease, transform .06s ease;
+  opacity: var(--tbtn-opacity); transition: opacity .12s ease, background .12s ease, transform .06s ease;
   -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px);
 }
-.tbtn:active { opacity: 1; background: rgba(255,255,255,.22); transform: scale(.94); }
+.tbtn:active { opacity: 1; background: rgba(40,30,52,.7); transform: scale(.94); }
 .tbtn-jump {
   width: 80px; height: 80px; flex-direction: column; line-height: 1.05;
-  background: linear-gradient(180deg, rgba(255,93,158,.22), rgba(192,16,48,.22));
-  border-color: rgba(255,93,158,.45);
+  background: linear-gradient(180deg, rgba(150,40,80,.42), rgba(90,12,30,.42));
+  border-color: rgba(255,93,158,.5);
   font-family: "Press Start 2P", monospace; font-size: 11px;
 }
-.tbtn-jump:active { background: linear-gradient(180deg, rgba(255,93,158,.5), rgba(192,16,48,.5)); }
+.tbtn-jump:active { background: linear-gradient(180deg, rgba(255,93,158,.55), rgba(192,16,48,.55)); }
 .tbtn-jump small { font-size: 7px; opacity: .8; margin-top: 4px; font-family: "Poppins"; }
 /* tiny screens: shrink further so the corners stay clear */
 @media (max-height: 380px) {

@@ -17,9 +17,11 @@ country flag go on a global leaderboard ranked by fewest deaths.
 - **← → / A D** — move
 - **SPACE / ↑ / W** — jump (hold for higher; **tap twice = big jump**)
 - **R** — restart the level
-- **⛶** — fullscreen &nbsp;•&nbsp; on phones: on-screen ◀ ▶ + JUMP buttons
+- **⛶** — fullscreen &nbsp;•&nbsp; **⚙** settings &nbsp;•&nbsp; **🔊** music on/off (top-right)
+- On-screen ◀ ▶ + JUMP buttons (auto on phones; mouse users can enable them in **Settings**, with an adjustable transparency slider)
 
 You must **enter a name** before you can play (it's how you get on the board).
+Soft, playful background music plays by default — toggle it any time with the 🔊 button.
 
 ## The lies
 | Looks like | Actually |
@@ -35,6 +37,7 @@ You must **enter a name** before you can play (it's how you get on the board).
 | A pool of lava | **Real lava** — burns you. *Or* **fake lava** — safe solid floor. Identical on sight. |
 | Your own controls | **Reversed** in marked zones (left = right) |
 | The exit | **Runaway door** — bolts to a new spot the moment you get close 🏃 |
+| A door on the floor | Sometimes a **decoy** — the *real* exit is on a ledge above; ride a **bounce pad** up to it |
 
 ## 50 levels across 10 themed worlds
 The scenery changes every 5 levels and the lies get meaner:

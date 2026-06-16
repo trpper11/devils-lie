@@ -24,6 +24,12 @@
     <!-- Fullscreen toggle -->
     <button id="fs-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
 
+    <!-- Top-right buttons: music + settings -->
+    <div id="topbtns">
+      <button id="music-btn" class="iconbtn" title="Music on/off" aria-label="Toggle music">♪</button>
+      <button id="settings-btn" class="iconbtn" title="Settings" aria-label="Settings">⚙</button>
+    </div>
+
     <!-- Touch controls (shown on touch devices) -->
     <div id="touch" class="hidden">
       <div class="t-left">
@@ -68,6 +74,39 @@
         <button class="btn ghost" id="lb-refresh">↻ REFRESH</button>
         <button class="btn" id="lb-back">BACK</button>
       </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="overlay hidden" id="settings-screen">
+      <h1 class="logo small">⚙ SETTINGS</h1>
+      <div class="settings-box">
+        <div class="set-row">
+          <label>On-screen controls</label>
+          <div class="seg" id="set-controls" role="group">
+            <button data-v="auto">Auto</button><button data-v="on">On</button><button data-v="off">Off</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <label>Button transparency <span id="set-op-val" class="set-val"></span></label>
+          <input type="range" id="set-opacity" min="15" max="100" step="5" />
+        </div>
+        <div class="set-row">
+          <label>Music</label>
+          <div class="seg" id="set-music" role="group">
+            <button data-v="on">On</button><button data-v="off">Off</button>
+          </div>
+        </div>
+        <p class="set-note">Keyboard always works: ← → / A D to move · SPACE / ↑ / W to jump · R to restart</p>
+      </div>
+      <button class="btn" id="set-back">DONE</button>
+    </div>
+
+    <!-- Stage interstitial (between acts) -->
+    <div class="overlay hidden" id="stage-screen">
+      <h2 class="stage-kicker" id="stage-kicker">STAGE 2</h2>
+      <h1 class="logo" id="stage-title">THE VOID</h1>
+      <p class="tag" id="stage-tag">It only gets meaner from here.</p>
+      <button class="btn" id="stage-go">ENTER →</button>
     </div>
 
     <!-- Rotate prompt (portrait on touch) -->

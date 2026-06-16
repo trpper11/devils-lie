@@ -1,5 +1,17 @@
 # Devil's Lie — Requests Tracker
 
+## Round 5 (2026-06-16) — "control options, fix twitch, Stage 2 / new elements, music" — ✅ ALL DONE
+
+1. [x] **Settings panel + control options + transparency** — ⚙ button (top-right). Choose on-screen controls **Auto / On / Off** (mouse users can now turn the buttons on); **transparency slider** for the buttons; buttons restyled from white to dark smoky glass so they don't hide the balloon. Persisted to localStorage.
+2. [x] **Character no longer twitches** — `drawPlayer` reworked with eased/smoothed animation: removed the 5 Hz idle wobble, damped squash amplitudes, eyes glide toward facing (no snap), `fear` eases in/out (was a hard jump), feet settle level when idle (was a frozen-asymmetric pose).
+3. [x] **Stage 2 + new elements/playground** — act-break interstitials ("STAGE 2 — THE VOID" at L21, "FINAL STAGE — OVERDRIVE" at L41). New **bounce-pad** mechanic (`J`) enabling **vertical/platform levels**: 4 levels reworked into bounce-up-to-elevated-exit playgrounds (Springboard L23, The Ascent L33, Skyhook L43, Vertigo L47) with the floor door as a decoy.
+4. [x] **Background music** — soft, playful, fully **procedural** WebAudio loop (pentatonic pad + arpeggio + gentle bass; no assets). 🔊/🔇 toggle top-right; also in Settings; persisted.
+
+### Verification — ✅ all passed
+- [x] All 50 levels still proven solvable by the A\* physics solver (incl. the 4 new bounce levels + the new `J` mechanic added to the simulator).
+- [x] Bounce mechanic cross-validated: solver plan for Springboard replayed in the REAL engine → cleared, balloon rose ~211px (pad fires identically to the sim).
+- [x] Zero JS errors swept across all 50 levels; settings/music/transparency functionally tested + persisted; controls=On reveals buttons for mouse users.
+
 ## Round 4 (2026-06-16) — "balloon, 50 levels, lava, shards, leaderboard, name-gate, no bugs" — ✅ ALL DONE
 
 1. [x] **Character** — kept the balloon, removed the trailing/jump/landing "bubble" particles that read as exhaust. Death burst kept (now fiery embers when burned in lava).

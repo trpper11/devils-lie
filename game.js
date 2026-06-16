@@ -12,7 +12,7 @@
   const H = ROWS * TILE; // 480
 
   // ---- Physics (px, seconds) ------------------------------------------
-  const GRAVITY = 2400, MOVE = 250, JUMP = 700, BIG_JUMP = 980;
+  const GRAVITY = 2400, MOVE = 250, JUMP = 700, BIG_JUMP = 980, BOUNCE = 980;
   const MAX_FALL = 900, ACCEL = 2600, AIR_ACCEL = 1800, FRICTION = 2200;
   const COYOTE = 0.10, JUMP_BUF = 0.12, DBL_TAP = 0.30;
   const PW = 26, PH = 28; // balloon hitbox (a touch rounder)
@@ -80,7 +80,7 @@
   let levelIndex = 0, deaths = 0, runStart = 0, runElapsed = 0;
   let player, traps, grid, texts, collapsed, textShown, activeText, activeTextT;
   let levelTime = 0, animTime = 0, particles = [], shake = 0, hitStop = 0;
-  let staticLayer = null, embers = [], GRAD = null;
+  let staticLayer = null, embers = [], GRAD = null, animDt = 1 / 60;
   let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
@@ -150,6 +150,7 @@
   const sndLand = () => tone(160, 0.06, "sine", 0.05, 110);
   const sndStep = () => tone(420, 0.03, "square", 0.015, 380);
   const sndBreak = () => tone(200, 0.18, "sawtooth", 0.07, 90);
+  const sndBounce = () => { tone(300, 0.12, "sine", 0.07, 760); tone(600, 0.1, "triangle", 0.04, 1100, 0.02); };
   const sndPop = () => { tone(900, 0.05, "square", 0.12, 200); tone(140, 0.16, "sawtooth", 0.10, 60, 0.02); };
   // lava sizzle: a hiss of noise + low fizzle, then the usual sad trombone
   function sndBurn() {
@@ -169,6 +170,72 @@
     notes.forEach((f, i) => tone(f, 0.26, "sawtooth", 0.10, f * 0.94, 0.12 + i * 0.16));
   }
   function sndWin() { [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.18, "triangle", 0.09, 0, i * 0.10)); }
+
+  // =====================================================================
+  // Settings (persisted)
+  // =====================================================================
+  const DEFAULT_SETTINGS = { controls: "auto", opacity: 0.4, music: true };
+  let settings = (() => {
+    try { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem("devilslie.settings")) || {}); }
+    catch (e) { return Object.assign({}, DEFAULT_SETTINGS); }
+  })();
+  function saveSettings() { try { localStorage.setItem("devilslie.settings", JSON.stringify(settings)); } catch (e) {} }
+  function controlsShouldShow() {
+    return settings.controls === "on" || (settings.controls === "auto" && isTouch);
+  }
+  function applySettings() {
+    document.documentElement.style.setProperty("--tbtn-opacity", settings.opacity);
+    updateTouchVisibility();
+    const mb = document.getElementById("music-btn");
+    if (mb) { mb.textContent = settings.music ? "🔊" : "🔇"; mb.classList.toggle("off", !settings.music); mb.title = settings.music ? "Music: on" : "Music: off"; }
+  }
+  function updateTouchVisibility() {
+    const show = state === "play" && controlsShouldShow();
+    touchUI.classList.toggle("hidden", !show);
+  }
+
+  // =====================================================================
+  // Music — soft, playful, procedural (WebAudio; no assets). Pentatonic so it
+  // never sounds "wrong". Gentle pad + arpeggio + soft bass on a loop.
+  // =====================================================================
+  let musicGain = null, musicTimer = null, musicStep = 0;
+  // C major pentatonic across a couple octaves (Hz)
+  const ARP = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+  const BASS = [130.81, 146.83, 110.00, 123.47];      // C2 D2 A1 B1 — a calm I–ii–vi–vii loop
+  const PAD = [[261.63, 329.63, 392.00], [293.66, 349.23, 440.00], [220.00, 277.18, 329.63], [246.94, 311.13, 392.00]];
+  function mNote(a, freq, dur, type, vol, glideTo) {
+    const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + 0.03);
+  }
+  function musicBeat() {
+    const a = actx; if (!a || !settings.music) return;
+    const bar = Math.floor(musicStep / 4) % 4, sub = musicStep % 4;
+    if (sub === 0) { // downbeat: soft bass + pad swell
+      mNote(a, BASS[bar], 1.4, "sine", 0.16);
+      PAD[bar].forEach(f => mNote(a, f, 1.7, "triangle", 0.035));
+    }
+    // arpeggio — gentle, skips a step now and then for a playful feel
+    if (sub !== 2 || bar % 2 === 0) mNote(a, ARP[musicStep % ARP.length], 0.5, "sine", 0.055);
+    if (sub === 3) mNote(a, ARP[(musicStep + 2) % ARP.length] * 2, 0.3, "triangle", 0.025); // sparkle
+    musicStep++;
+  }
+  function startMusic() {
+    const a = audio(); if (!a) return;
+    if (a.state === "suspended") a.resume();
+    if (!musicGain) { musicGain = a.createGain(); musicGain.gain.value = 0.9; musicGain.connect(a.destination); }
+    if (musicTimer) return;
+    musicStep = 0; musicBeat();
+    musicTimer = setInterval(musicBeat, 380); // ~158 'eighths'/min — relaxed
+  }
+  function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+  function setMusic(on) {
+    settings.music = on; saveSettings(); applySettings();
+    if (on) startMusic(); else stopMusic();
+  }
 
   // =====================================================================
   // Level load
@@ -269,6 +336,7 @@
     if (ch === "#") return true;
     if (ch === "H") return true;  // phantom gap: looks like a pit, is solid floor
     if (ch === "G") return true;  // fake lava: looks molten, is actually safe floor
+    if (ch === "J") return true;  // bounce pad: solid, but launches you when you land on it
     if (ch === "F") return false; // fake floor: drawn solid, never holds you
     return false;
   }
@@ -337,7 +405,8 @@
     const fr1 = Math.floor(py / TILE), fr2 = Math.floor((py + PH - 1) / TILE);
     for (let r = fr1; r <= fr2; r++) for (let c = fc1; c <= fc2; c++)
       if (r >= 0 && r < ROWS && grid[r] && grid[r][c] === "F" && !collapsed.has(c + "," + r)) breakFloor(c, r);
-    player.fear = Math.max(player.fear * 0.9, hazardNear ? 1 : 0);
+    // ease fear up and down so the face never snaps (was a hard jump to 1)
+    player.fear += ((hazardNear ? 1 : 0) - player.fear) * (hazardNear ? 0.18 : 0.08);
     return dead; // 0 none, 1 die, 2 die-by-spike (pop)
   }
   function breakFloor(c, r) {
@@ -395,6 +464,16 @@
     moveAxis(player.vx * dt, 0);
     moveAxis(0, player.vy * dt);
     if (!wasGround && player.onGround) { player.landT = 0; sndLand(); } // landed (squash handles the juice; no dust puffs)
+    // bounce pad: standing on a J tile flings you upward (enables vertical play)
+    if (player.onGround) {
+      const fr = Math.floor((player.y + PH) / TILE);
+      const cL = Math.floor((player.x + 4) / TILE), cR = Math.floor((player.x + PW - 4) / TILE);
+      if ((grid[fr] && (grid[fr][cL] === "J" || grid[fr][cR] === "J"))) {
+        player.vy = -BOUNCE; player.onGround = false; player.coyote = 0;
+        sndBounce(); shake = Math.max(shake, 4);
+        for (let i = 0; i < 6; i++) particles.push({ x: player.x + PW / 2 + (Math.random() - .5) * 16, y: player.y + PH, vx: (Math.random() - .5) * 120, vy: -Math.random() * 80, life: 0.3, r: 2.5, col: "#9fe8c0" });
+      }
+    }
     player.landT += dt;
     // running animation (feet cycle only — no trailing dust)
     if (player.onGround && Math.abs(player.vx) > 60) player.runCycle += Math.abs(player.vx) * dt * 0.04;
@@ -416,7 +495,7 @@
       }
     }
     if (overlap(player.x, player.y, PW, PH, exit.c * TILE + 6, exit.r * TILE + 4, TILE - 12, TILE - 4)) {
-      if (levelIndex + 1 < LEVELS.length) { sndWin(); loadLevel(levelIndex + 1); }
+      if (levelIndex + 1 < LEVELS.length) { sndWin(); advanceTo(levelIndex + 1); }
       else winGame(); // winGame plays its own fanfare
       return;
     }
@@ -546,6 +625,7 @@
       else if (ch === "O") drawFakePlatform(x, y);
       else if (ch === "M") drawDoor(x, y, false);
       else if (ch === "L" || ch === "G") drawLava(x, y, r); // L deadly, G safe — drawn identically (the troll)
+      else if (ch === "J") drawBouncePad(x, y);
     }
     if (exit) drawDoor(exit.c * TILE, exit.r * TILE, true); // the real (possibly runaway) door
     for (const t of traps) {
@@ -596,6 +676,22 @@
     GRAD.lava.addColorStop(0, "#ff9b2e"); GRAD.lava.addColorStop(0.45, "#ff5a14"); GRAD.lava.addColorStop(1, "#6e1102");
   }
   function drawFakePlatform(x, y) { ctx.fillStyle = "#33324e"; ctx.fillRect(x, y + 6, TILE, 13); ctx.fillStyle = "#43425f"; ctx.fillRect(x, y + 6, TILE, 4); }
+  // bounce pad — a springy mushroom cap on a base; bobs gently so it reads as "boing"
+  function drawBouncePad(x, y) {
+    const bob = Math.sin(animTime * 4 + x) * 1.5;
+    // dark base block
+    ctx.fillStyle = "#22202e"; ctx.fillRect(x + 4, y + 20, TILE - 8, TILE - 20);
+    ctx.fillStyle = "#2c2a3c"; ctx.fillRect(x + 4, y + 20, TILE - 8, 4);
+    // springy cap (green = "go up!")
+    const capY = y + 8 + bob;
+    const g = ctx.createLinearGradient(0, capY, 0, capY + 16); g.addColorStop(0, "#7fffb0"); g.addColorStop(1, "#1ea866");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(x + 2, capY + 14); ctx.quadraticCurveTo(x + TILE / 2, capY - 8, x + TILE - 2, capY + 14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.beginPath(); ctx.ellipse(x + TILE / 2 - 4, capY + 2, 4, 2.5, -0.3, 0, 7); ctx.fill();
+    // up chevrons
+    ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + TILE / 2 - 5, capY + 9); ctx.lineTo(x + TILE / 2, capY + 4); ctx.lineTo(x + TILE / 2 + 5, capY + 9); ctx.stroke();
+  }
   // molten lava (animated). L = deadly, G = safe — drawn identically so you can't tell which lies.
   function drawLava(x, y, row) {
     ctx.save(); ctx.translate(x, y);
@@ -686,19 +782,28 @@
     const cx = player.x + PW / 2, cy = player.y + PH / 2;
     const R = PW / 2 + 1;
 
-    // squash & stretch
+    // --- smoothed animation values (eased, so nothing snaps/twitches) ---
+    if (player.look === undefined) { player.look = player.facing; player.feet = 0; }
+    const ease = Math.min(1, animDt * 12);
+    player.look += (player.facing - player.look) * ease;       // eyes glide toward facing
+    const moving = player.onGround && Math.abs(player.vx) > 40;
+    const feetTarget = moving ? Math.sin(player.runCycle) : 0;  // feet settle level when idle
+    player.feet += (feetTarget - player.feet) * Math.min(1, animDt * 18);
+    const fear = player.fear;
+
+    // gentle squash & stretch (small amplitudes — calm, not jumpy)
     let sx = 1, sy = 1;
-    if (player.onGround) { const land = Math.min(1, player.landT * 7); sx = 1 + 0.22 * (1 - land); sy = 1 - 0.22 * (1 - land); sx += 0.03 * Math.sin(animTime * 5); sy -= 0.03 * Math.sin(animTime * 5); }
-    else { const v = Math.max(-1, Math.min(1, player.vy / 700)); sy = 1 + 0.20 * Math.abs(v); sx = 1 - 0.14 * Math.abs(v); }
+    if (player.onGround) { const land = Math.min(1, player.landT * 9); sx = 1 + 0.13 * (1 - land); sy = 1 - 0.13 * (1 - land); }
+    else { const v = Math.max(-1, Math.min(1, player.vy / 800)); sy = 1 + 0.14 * Math.abs(v); sx = 1 - 0.10 * Math.abs(v); }
 
     ctx.save();
     ctx.translate(cx, cy + R * (1 - sy)); ctx.scale(sx, sy);
 
-    // little feet (animate while running)
-    const ft = player.onGround ? Math.sin(player.runCycle) * 4 : -3;
+    // little feet (gentle run cycle; level when standing)
+    const ft = player.feet * 4;
     ctx.fillStyle = "#c01030";
-    ctx.beginPath(); ctx.ellipse(-R * 0.45, R * 0.9 - ft, 5, 4, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(R * 0.45, R * 0.9 + ft, 5, 4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-R * 0.42, R * 0.92 - ft, 5, 4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R * 0.42, R * 0.92 + ft, 5, 4, 0, 0, 7); ctx.fill();
 
     // balloon body (cached gradient — local space is constant)
     ctx.fillStyle = GRAD.balloon; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
@@ -707,18 +812,17 @@
     // shine
     ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.4, R * 0.18, R * 0.26, -0.5, 0, 7); ctx.fill();
 
-    // eyes (look toward movement; widen with fear)
-    const look = player.facing * 2.2, fear = player.fear;
-    const eyeR = 5 + fear * 1.5, dir = player.facing;
+    // eyes (glide toward movement; widen a little with fear)
+    const lx = player.look * 1.8, eyeR = 5 + fear * 1.2;
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(-6 + look * 0.3, -2, eyeR, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 + look * 0.3, -2, eyeR, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(-6 + lx * 0.25, -2, eyeR, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 + lx * 0.25, -2, eyeR, 0, 7); ctx.fill();
     ctx.fillStyle = "#160018";
-    ctx.beginPath(); ctx.arc(-6 + look * 0.3 + dir * 1.8, -2 + fear, 2.4, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 + look * 0.3 + dir * 1.8, -2 + fear, 2.4, 0, 7); ctx.fill();
-    // mouth: smile normally, "o" of fear when hazard near
+    ctx.beginPath(); ctx.arc(-6 + lx * 0.55, -2 + fear * 0.8, 2.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 + lx * 0.55, -2 + fear * 0.8, 2.4, 0, 7); ctx.fill();
+    // mouth: smile normally, "o" of fear when a hazard is near
     ctx.strokeStyle = "#160018"; ctx.lineWidth = 1.6; ctx.beginPath();
-    if (fear > 0.4) { ctx.arc(0, 7, 2.4, 0, 7); }
+    if (fear > 0.45) { ctx.arc(0, 7, 2.2, 0, 7); }
     else { ctx.arc(0, 4, 4, 0.15 * Math.PI, 0.85 * Math.PI); }
     ctx.stroke();
     ctx.restore();
@@ -808,12 +912,59 @@
     deaths = 0; elDeaths.textContent = "DEATHS 0";
     runStart = performance.now();
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden"); lbScreen.classList.add("hidden");
-    if (isTouch) touchUI.classList.remove("hidden");
+    document.getElementById("settings-screen").classList.add("hidden");
+    document.getElementById("stage-screen").classList.add("hidden");
     state = "play";
+    updateTouchVisibility();
+    if (settings.music) startMusic();
     loadLevel(QA_LEVEL);
   }
   startBtn.addEventListener("click", startGame);
   document.getElementById("again-btn").addEventListener("click", startGame);
+
+  // ----- Stage interstitials (act breaks) -----
+  const STAGES = {
+    20: { kicker: "STAGE 2", title: "THE VOID", tag: "Everything you learned? The Void forgot to care." },
+    40: { kicker: "FINAL STAGE", title: "OVERDRIVE", tag: "Saws, storms, nightmares. No more training wheels." },
+  };
+  let pendingLevel = 0;
+  function advanceTo(next) {
+    if (STAGES[next]) { showStage(next); return; }
+    loadLevel(next);
+  }
+  function showStage(next) {
+    pendingLevel = next;
+    const s = STAGES[next];
+    document.getElementById("stage-kicker").textContent = s.kicker;
+    document.getElementById("stage-title").textContent = s.title;
+    document.getElementById("stage-tag").textContent = s.tag;
+    document.getElementById("stage-screen").classList.remove("hidden");
+    state = "stage"; // pauses stepping
+    updateTouchVisibility();
+  }
+  document.getElementById("stage-go").addEventListener("click", () => {
+    document.getElementById("stage-screen").classList.add("hidden");
+    state = "play"; updateTouchVisibility();
+    loadLevel(pendingLevel);
+  });
+
+  // ----- Music + Settings wiring -----
+  document.getElementById("music-btn").addEventListener("click", () => setMusic(!settings.music));
+  function syncSettingsUI() {
+    document.querySelectorAll("#set-controls button").forEach(b => b.classList.toggle("sel", b.dataset.v === settings.controls));
+    document.querySelectorAll("#set-music button").forEach(b => b.classList.toggle("sel", b.dataset.v === (settings.music ? "on" : "off")));
+    const op = document.getElementById("set-opacity"); op.value = Math.round(settings.opacity * 100);
+    document.getElementById("set-op-val").textContent = Math.round(settings.opacity * 100) + "%";
+  }
+  let settingsReturn = "title";
+  function openSettings() { settingsReturn = (state === "settings") ? settingsReturn : state; state = "settings"; syncSettingsUI(); document.getElementById("settings-screen").classList.remove("hidden"); updateTouchVisibility(); }
+  function closeSettings() { document.getElementById("settings-screen").classList.add("hidden"); state = settingsReturn === "settings" ? "title" : settingsReturn; updateTouchVisibility(); }
+  document.getElementById("settings-btn").addEventListener("click", () => { audio(); openSettings(); });
+  document.getElementById("set-back").addEventListener("click", closeSettings);
+  document.querySelectorAll("#set-controls button").forEach(b => b.addEventListener("click", () => { settings.controls = b.dataset.v; saveSettings(); applySettings(); syncSettingsUI(); }));
+  document.querySelectorAll("#set-music button").forEach(b => b.addEventListener("click", () => { setMusic(b.dataset.v === "on"); syncSettingsUI(); }));
+  document.getElementById("set-opacity").addEventListener("input", (e) => { settings.opacity = Math.max(0.15, Math.min(1, e.target.value / 100)); document.getElementById("set-op-val").textContent = Math.round(settings.opacity * 100) + "%"; document.documentElement.style.setProperty("--tbtn-opacity", settings.opacity); });
+  document.getElementById("set-opacity").addEventListener("change", saveSettings);
   nameInput.addEventListener("input", () => {
     refreshStartBtn();
     if (nameValid() && geoLine.dataset.hint) { geoLine.dataset.hint = ""; geoLine.textContent = playerGeo.cc ? `${LB.flag(playerGeo.cc)} ${playerGeo.country}` : "Detecting your flag…"; }
@@ -832,10 +983,12 @@
     if (!last) last = now;
     let dt = (now - last) / 1000; last = now;
     if (dt > 0.1) dt = 0.1;
+    animDt = dt;
     if (hitStop > 0) { hitStop -= dt; dt *= 0.15; }
     if (!needsRotate && !window.__DLman) { acc += dt; while (acc >= DT) { step(DT); acc -= DT; } }
     updateParticles(dt);
     render();
+    updateTouchVisibility();
     if (state === "play") elTime.textContent = ((performance.now() - runStart) / 1000).toFixed(1) + "s";
     requestAnimationFrame(frameLoop);
   }
@@ -864,6 +1017,7 @@
   initGrads();
   nameInput.value = LB.getName();
   refreshStartBtn();
+  applySettings();
   loadLevel(0); state = "title";
   LB.geo().then(g => { playerGeo = g; if (!geoLine.dataset.hint) geoLine.textContent = g.cc ? `${LB.flag(g.cc)} ${g.country}` : "Flag: unknown (offline)"; });
   requestAnimationFrame(frameLoop);
