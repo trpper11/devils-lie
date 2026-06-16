@@ -6,12 +6,18 @@ toward kills you. Every trap is **fair**: there's always a safe path if you're
 smarter (and faster) than the level expects. Death is instant. Respawn is instant.
 Rage, then laugh.
 
-**[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 4 hand-built levels &nbsp;•&nbsp; ~6 kinds of lie.
+**[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 8 hand-built levels &nbsp;•&nbsp; 6 kinds of lie &nbsp;•&nbsp; global leaderboard 🏆
+
+Play as a living red **balloon** — eyes, little feet, squash & stretch, and it
+bursts into shreds when a spike pops it. Works on desktop (full-screen) and
+phones (landscape + touch controls). Your name + country flag go on a global
+leaderboard ranked by fewest deaths.
 
 ## Controls
 - **← → / A D** — move
-- **SPACE / ↑ / W** — jump (hold for higher)
+- **SPACE / ↑ / W** — jump (hold for higher; **tap twice = big jump**)
 - **R** — restart the level
+- **⛶** — fullscreen &nbsp;•&nbsp; on phones: on-screen ◀ ▶ + JUMP buttons
 
 ## The lies
 | Looks like | Actually |
@@ -23,11 +29,15 @@ Rage, then laugh.
 | The exit door | **Fake exit** — kills you. The real one is elsewhere. |
 | A platform | **Fall-through** — you drop right past it |
 
-## Levels
+## Levels (8)
 1. **Just walk to the door** — it's never that easy.
 2. **Trust the floor** — don't take the obvious bridge.
 3. **Look up. Look out.** — rhythm + the wrong door.
 4. **The Gauntlet** — everything you learned, at once.
+5. **Double Cross** — two pits, two lies.
+6. **Rhythm Hell** — three guillotines and a crusher.
+7. **Spike Garden** — it bites.
+8. **The Big Lie** — every trick at once.
 
 ## Tech
 Pure vanilla JS + Canvas. No assets, no dependencies, no build step — one

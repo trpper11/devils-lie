@@ -4,125 +4,169 @@
   --red: #ff3b54;
   --red-deep: #c01030;
   --gold: #ffcf5c;
+  --pink: #ff5d9e;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 html, body {
-  height: 100%;
-  background: radial-gradient(circle at 50% 0%, #1a0e16 0%, var(--bg) 60%);
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #2a0f1e 0%, transparent 60%),
+    radial-gradient(circle at 50% 120%, #160a16 0%, var(--bg) 60%);
   color: var(--ink);
   font-family: "Poppins", system-ui, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-user-select: none; user-select: none;
+  touch-action: none;
 }
 
+/* frame is sized by JS to match the letterboxed canvas */
 #frame {
   position: relative;
-  width: 800px;
-  max-width: 96vw;
-  aspect-ratio: 800 / 520;
-  border-radius: 14px;
+  width: 800px; height: 480px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05) inset;
+  box-shadow: 0 30px 90px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.05) inset;
 }
-
-#hud {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-family: "Press Start 2P", monospace;
-  font-size: 11px;
-  letter-spacing: .5px;
-  color: var(--gold);
-  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0));
-  z-index: 5;
-  pointer-events: none;
-}
-#hud-deaths { color: var(--red); }
 
 canvas#game {
   display: block;
-  width: 100%;
-  height: calc(100% - 40px);
-  margin-top: 40px;
-  background: #12121d;
-  image-rendering: pixelated;
+  width: 100%; height: 100%;
+  background: #0d0d16;
+  image-rendering: auto;
 }
 
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute; top: 0; left: 0; right: 0; height: 38px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px;
+  font-family: "Press Start 2P", monospace; font-size: 10px; letter-spacing: .5px;
+  color: var(--gold);
+  background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,0));
+  z-index: 5; pointer-events: none;
+  text-shadow: 0 2px 0 rgba(0,0,0,.5);
+}
+#hud-deaths { color: var(--red); }
+
+/* ---------- Fullscreen button ---------- */
+#fs-btn {
+  position: absolute; right: 10px; bottom: 10px; z-index: 6;
+  width: 38px; height: 38px; border-radius: 9px;
+  background: rgba(0,0,0,.4); color: var(--ink);
+  border: 1px solid rgba(255,255,255,.15);
+  font-size: 18px; cursor: pointer; line-height: 1;
+}
+#fs-btn:active { transform: scale(.92); }
+
+/* ---------- Overlays ---------- */
 .overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 24px;
-  background: radial-gradient(circle at 50% 40%, rgba(40,8,18,.86), rgba(8,8,14,.96));
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 18px; gap: 6px;
+  background: radial-gradient(circle at 50% 35%, rgba(40,8,18,.9), rgba(8,8,14,.97));
   backdrop-filter: blur(3px);
+  overflow: auto;
 }
 .overlay.hidden { display: none; }
 
-.overlay h1 {
+.logo {
   font-family: "Press Start 2P", monospace;
-  font-size: clamp(28px, 6vw, 54px);
-  line-height: 1.15;
-  color: var(--ink);
+  font-size: clamp(24px, 5.2vw, 50px); line-height: 1.18;
   text-shadow: 0 4px 0 var(--red-deep), 0 0 30px rgba(255,59,84,.5);
 }
-.overlay h1 span { display: block; color: var(--red); }
-.overlay h1.won span { color: var(--gold); }
+.logo span { display: block; color: var(--red); }
+.logo.won span { color: var(--gold); font-size: .5em; }
+.logo.small { font-size: clamp(18px, 3.5vw, 30px); }
 
-.tag {
-  margin-top: 18px;
-  font-weight: 800;
-  font-size: clamp(14px, 2.4vw, 20px);
-  color: var(--gold);
-}
-.sub {
-  margin-top: 10px;
-  font-size: 13px;
-  line-height: 1.7;
-  color: #c9c9d6;
-  max-width: 460px;
-}
+.tag { margin-top: 8px; font-weight: 800; font-size: clamp(13px, 2.2vw, 19px); color: var(--gold); }
+.sub { font-size: 12px; line-height: 1.6; color: #c9c9d6; max-width: 440px; }
 
+/* name input */
+.namebox { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.namebox label { font-family: "Press Start 2P", monospace; font-size: 10px; color: #9a9ab0; }
+#name-input {
+  width: min(280px, 80vw); padding: 12px 14px; text-align: center;
+  font-family: "Press Start 2P", monospace; font-size: 14px;
+  color: var(--ink); background: #15101f; border: 2px solid var(--red-deep);
+  border-radius: 10px; outline: none; text-transform: uppercase;
+}
+#name-input:focus { border-color: var(--gold); box-shadow: 0 0 16px rgba(255,207,92,.3); }
+.geo-line { font-size: 11px; color: #8a8a9a; min-height: 14px; }
+
+/* buttons */
 .btn {
-  margin-top: 26px;
-  font-family: "Press Start 2P", monospace;
-  font-size: 15px;
-  color: #1a0008;
-  background: linear-gradient(180deg, var(--gold), #f0a92e);
-  border: none;
-  padding: 16px 34px;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 6px 0 #9a6a10, 0 12px 24px rgba(0,0,0,.4);
+  margin-top: 12px; font-family: "Press Start 2P", monospace; font-size: 14px;
+  color: #1a0008; background: linear-gradient(180deg, var(--gold), #f0a92e);
+  border: none; padding: 14px 30px; border-radius: 10px; cursor: pointer;
+  box-shadow: 0 6px 0 #9a6a10, 0 12px 22px rgba(0,0,0,.4);
   transition: transform .06s ease, box-shadow .06s ease;
 }
 .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #9a6a10; }
-
-.controls {
-  margin-top: 28px;
-  font-size: 11px;
-  color: #8a8a9a;
-  letter-spacing: .3px;
+.btn.ghost {
+  background: transparent; color: var(--gold);
+  border: 2px solid rgba(255,207,92,.55); box-shadow: none; font-size: 11px; padding: 11px 20px;
 }
+.btn.ghost:active { transform: translateY(2px); }
 
-#credit {
-  font-size: 12px;
-  color: #5a5a6a;
-  letter-spacing: .4px;
+.controls { margin-top: 16px; font-size: 10px; color: #8a8a9a; letter-spacing: .3px; }
+
+/* ---------- Leaderboard ---------- */
+.lb-wrap { width: min(560px, 92vw); max-height: 46vh; overflow-y: auto; margin-top: 8px;
+  border: 1px solid rgba(255,255,255,.08); border-radius: 10px; background: rgba(0,0,0,.25); }
+#lb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#lb-table th { position: sticky; top: 0; background: #1a0e1a; color: var(--gold);
+  font-family: "Press Start 2P", monospace; font-size: 9px; padding: 10px 8px; text-align: left; }
+#lb-table td { padding: 9px 8px; border-top: 1px solid rgba(255,255,255,.05); }
+#lb-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+.lb-rank { color: var(--gold); font-weight: 800; width: 38px; }
+.lb-rank.gold { color: #ffd95c; } .lb-rank.silver { color: #d8d8e2; } .lb-rank.bronze { color: #e0995a; }
+.lb-name { font-weight: 700; }
+.lb-flag { font-size: 16px; }
+.lb-me td { background: rgba(255,59,84,.14) !important; }
+.lb-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+/* ---------- Touch controls ---------- */
+#touch { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+#touch.hidden { display: none; }
+.t-left { position: absolute; left: 12px; bottom: 14px; display: flex; gap: 10px; }
+.t-right { position: absolute; right: 12px; bottom: 14px; }
+.tbtn {
+  pointer-events: auto;
+  width: 68px; height: 68px; border-radius: 50%;
+  background: rgba(255,255,255,.10); border: 2px solid rgba(255,255,255,.22);
+  color: #fff; font-size: 26px; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.tbtn:active { background: rgba(255,255,255,.25); transform: scale(.94); }
+.tbtn-jump {
+  width: 92px; height: 92px; font-size: 16px; flex-direction: column; line-height: 1.1;
+  background: linear-gradient(180deg, rgba(255,93,158,.35), rgba(192,16,48,.35));
+  border-color: rgba(255,93,158,.6);
+  font-family: "Press Start 2P", monospace; font-size: 12px;
+}
+.tbtn-jump small { font-size: 8px; opacity: .8; margin-top: 4px; font-family: "Poppins"; }
+
+/* ---------- Rotate prompt ---------- */
+.phone {
+  width: 110px; height: 64px; border: 5px solid var(--gold); border-radius: 12px;
+  position: relative; animation: rotatePhone 2.2s ease-in-out infinite;
+  margin-bottom: 18px;
+}
+.phone-inner { position: absolute; inset: 6px; border-radius: 4px;
+  background: linear-gradient(135deg, rgba(255,207,92,.25), rgba(255,59,84,.25)); }
+@keyframes rotatePhone {
+  0%, 30%   { transform: rotate(90deg); }
+  60%, 100% { transform: rotate(0deg); }
+}
+#rotate-screen h2 { font-family: "Press Start 2P", monospace; font-size: 16px; color: var(--gold); margin-bottom: 10px; }
+
+/* responsive overlay tightening */
+@media (max-height: 430px) {
+  .controls, .geo-line { display: none; }
+  .btn { margin-top: 8px; padding: 10px 22px; font-size: 12px; }
+  .namebox { margin-top: 6px; }
 }

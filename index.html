@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b12" />
   <title>Devil's Lie — a troll platformer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,33 +12,72 @@
 </head>
 <body>
   <div id="frame">
+    <canvas id="game" width="800" height="480"></canvas>
+
+    <!-- HUD -->
     <div id="hud">
       <span id="hud-level">LEVEL 1</span>
       <span id="hud-deaths">DEATHS 0</span>
       <span id="hud-time">0.0s</span>
     </div>
 
-    <canvas id="game" width="800" height="480"></canvas>
+    <!-- Fullscreen toggle -->
+    <button id="fs-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
 
-    <!-- Title overlay -->
-    <div class="overlay" id="title-screen">
-      <h1>DEVIL'S<span>LIE</span></h1>
-      <p class="tag">The level is lying to you.</p>
-      <p class="sub">4 levels. Every floor, every door, every spike — a trap.<br/>Be smarter than the smartest, or die instantly.</p>
-      <button class="btn" id="start-btn">PLAY</button>
-      <p class="controls">← → / A D to move &nbsp;•&nbsp; SPACE / ↑ / W to jump &nbsp;•&nbsp; R to restart</p>
+    <!-- Touch controls (shown on touch devices) -->
+    <div id="touch" class="hidden">
+      <div class="t-left">
+        <button class="tbtn" id="t-l">◀</button>
+        <button class="tbtn" id="t-r">▶</button>
+      </div>
+      <div class="t-right">
+        <button class="tbtn tbtn-jump" id="t-j">JUMP<small>tap×2 = big</small></button>
+      </div>
     </div>
 
-    <!-- Win overlay -->
+    <!-- Title -->
+    <div class="overlay" id="title-screen">
+      <h1 class="logo">DEVIL'S<span>LIE</span></h1>
+      <p class="tag">The level is lying to you.</p>
+      <div class="namebox">
+        <label for="name-input">ENTER YOUR NAME</label>
+        <input id="name-input" maxlength="14" autocomplete="off" spellcheck="false" placeholder="e.g. BOBA" />
+        <p class="geo-line" id="geo-line">Detecting your flag…</p>
+      </div>
+      <button class="btn" id="start-btn">PLAY</button>
+      <button class="btn ghost" id="lb-btn">🏆 LEADERBOARD</button>
+      <p class="controls">← → / A D move &nbsp;•&nbsp; SPACE / ↑ jump (tap×2 = big) &nbsp;•&nbsp; R restart</p>
+    </div>
+
+    <!-- Win -->
     <div class="overlay hidden" id="win-screen">
-      <h1 class="won">YOU<span>WON</span></h1>
-      <p class="tag" id="win-stats">Survived all 4 lies.</p>
-      <p class="sub">Now go record the rage-quit walkthrough. 😈</p>
+      <h1 class="logo won">YOU<span>BEAT THE DEVIL</span></h1>
+      <p class="tag" id="win-stats">Survived every lie.</p>
+      <p class="sub" id="submit-status"></p>
       <button class="btn" id="again-btn">PLAY AGAIN</button>
+      <button class="btn ghost" id="lb-btn2">🏆 LEADERBOARD</button>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="overlay hidden" id="lb-screen">
+      <h1 class="logo small">🏆 LEADERBOARD</h1>
+      <p class="sub">Fewest deaths wins. Ties broken by time. Finishers only.</p>
+      <div class="lb-wrap"><table id="lb-table"><tbody><tr><td>Loading…</td></tr></tbody></table></div>
+      <div class="lb-actions">
+        <button class="btn ghost" id="lb-refresh">↻ REFRESH</button>
+        <button class="btn" id="lb-back">BACK</button>
+      </div>
+    </div>
+
+    <!-- Rotate prompt (portrait on touch) -->
+    <div class="overlay hidden" id="rotate-screen">
+      <div class="phone"><div class="phone-inner"></div></div>
+      <h2>Rotate your device</h2>
+      <p class="sub">Devil's Lie plays best in landscape. Turn your phone sideways 🔄</p>
     </div>
   </div>
 
-  <p id="credit">Devil's Lie — a $0 browser troll game</p>
+  <script src="leaderboard.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
