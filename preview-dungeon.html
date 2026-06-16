@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Devil's Lie — Dark Dungeon art preview</title>
+<style>
+  html,body{margin:0;height:100%;background:#05070a;color:#cdd3df;font-family:system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:16px}
+  h1{font-size:18px;margin:0;color:#ffcf5c;letter-spacing:1px}
+  p{margin:0;font-size:13px;color:#9aa0b0;max-width:680px;line-height:1.5}
+  canvas{image-rendering:pixelated;width:min(800px,96vw);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .note{font-size:11px;color:#6a7080}
+</style></head>
+<body>
+  <h1>🕯️ Dark Dungeon — sprite-art preview (one level)</h1>
+  <p>A mock of the <b>spooky / dark / eerie</b> direction using a CC0 dungeon tileset (stone, torches,
+     barrels, dungeon door) with our grumpy hero. If you like it, this art rolls across all 50 levels.</p>
+  <canvas id="c" width="800" height="480"></canvas>
+  <p class="note">Static mock · tileset: "buch" dungeon tiles (CC0, public domain). Not the live game.</p>
+<script>
+const T=16,S=40,img=new Image(); let x;
+function tile(col,row,dx,dy,size){x.imageSmoothingEnabled=false;x.drawImage(img,col*T,row*T,T,T,dx,dy,size||S,size||S);}
+function torch(px,py){
+  const g=x.createRadialGradient(px,py,4,px,py,90); g.addColorStop(0,'rgba(255,150,40,0.55)'); g.addColorStop(1,'rgba(255,120,30,0)');
+  x.fillStyle=g; x.fillRect(px-90,py-90,180,180);
+  x.fillStyle='#3a2a1a'; x.fillRect(px-2,py,4,16);
+  x.fillStyle='#ffae3a'; x.beginPath(); x.ellipse(px,py-2,4,7,0,0,7); x.fill();
+  x.fillStyle='#fff0b0'; x.beginPath(); x.ellipse(px,py-1,2,4,0,0,7); x.fill();
+}
+img.onload=()=>{
+  const c=document.getElementById('c'); x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,480); g.addColorStop(0,'#0a0e14'); g.addColorStop(1,'#05070a'); x.fillStyle=g; x.fillRect(0,0,800,480);
+  const h=x.createRadialGradient(400,300,40,400,300,420); h.addColorStop(0,'rgba(40,90,70,0.18)'); h.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=h; x.fillRect(0,0,800,480);
+  x.globalAlpha=0.35; for(let r=7;r<11;r++)for(let col=0;col<20;col++) tile(7,2,col*40,r*40); x.globalAlpha=1;
+  torch(140,250); torch(470,250); torch(700,250);
+  for(let col=0;col<20;col++) tile(7,1,col*40,440);
+  tile(7,1,280,400); tile(7,1,280,360);
+  tile(16,1,360,408,40); tile(16,2,400,408,40); tile(13,8,520,406,42);
+  tile(2,8,16*40,398,42);
+  x.fillStyle='#c0303a'; for(let i=0;i<3;i++){const sx=6*40+i*13; x.beginPath(); x.moveTo(sx,440); x.lineTo(sx+6,418); x.lineTo(sx+12,440); x.closePath(); x.fill();}
+  x.fillStyle='rgba(120,200,160,0.5)'; for(let i=0;i<24;i++){const mx=(i*97%800),my=(i*53%360)+40; x.beginPath(); x.arc(mx,my,1.5,0,7); x.fill();}
+  const v=x.createRadialGradient(400,240,200,400,240,460); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,0.75)'); x.fillStyle=v; x.fillRect(0,0,800,480);
+  drawGuy(1*40+20,440-14);
+};
+function drawGuy(cx,cy){const R=15;x.save();x.translate(cx,cy);
+  x.strokeStyle='#7a0c1c';x.lineWidth=3;x.lineCap='round';
+  x.beginPath();x.moveTo(-R*0.42,R*0.5);x.lineTo(-R*0.42,R*0.98-3);x.stroke();
+  x.beginPath();x.moveTo(R*0.42,R*0.5);x.lineTo(R*0.42,R*0.98-3);x.stroke();
+  x.fillStyle='#1c0a0e';x.beginPath();x.ellipse(-R*0.42-1,R*0.98,6,3.4,0,0,7);x.fill();x.beginPath();x.ellipse(R*0.42+1,R*0.98,6,3.4,0,0,7);x.fill();
+  const bg=x.createRadialGradient(-R*0.3,-R*0.4,2,0,0,R*1.2);bg.addColorStop(0,'#ff8aa0');bg.addColorStop(.5,'#ff3b54');bg.addColorStop(1,'#c01030');
+  x.fillStyle=bg;x.beginPath();x.arc(0,0,R,0,7);x.fill();
+  x.fillStyle='rgba(255,255,255,.5)';x.beginPath();x.ellipse(-R*0.38,-R*0.42,R*0.16,R*0.24,-0.5,0,7);x.fill();
+  const ex=5.5;x.strokeStyle='#160018';x.lineWidth=2.4;x.lineCap='round';
+  x.beginPath();x.moveTo(-ex-4,-8.5);x.lineTo(-ex+3,-5.5);x.stroke();x.beginPath();x.moveTo(ex+4,-8.5);x.lineTo(ex-3,-5.5);x.stroke();
+  x.fillStyle='#fff';x.beginPath();x.ellipse(-ex,-2.5,4,3.2,0,0,7);x.fill();x.beginPath();x.ellipse(ex,-2.5,4,3.2,0,0,7);x.fill();
+  x.fillStyle='#160018';x.beginPath();x.arc(-ex+1.4,-1.6,2,0,7);x.fill();x.beginPath();x.arc(ex+1.4,-1.6,2,0,7);x.fill();
+  x.strokeStyle='#160018';x.lineWidth=1.5;x.beginPath();x.arc(0,12,4,1.15*Math.PI,1.85*Math.PI);x.stroke();
+  x.lineWidth=3.2;x.beginPath();x.moveTo(0,6);x.quadraticCurveTo(-6,4.5,-9.5,8);x.stroke();x.beginPath();x.moveTo(0,6);x.quadraticCurveTo(6,4.5,9.5,8);x.stroke();
+  x.fillStyle='#160018';x.beginPath();x.arc(0,6,1.6,0,7);x.fill();x.restore();}
+img.src='assets/dungeon-tileset.png';
+</script>
+</body></html>

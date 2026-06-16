@@ -10,11 +10,11 @@
    ===================================================================== */
 window.LB = (function () {
   "use strict";
-  const BLOB = "019ecf14-8391-750a-9021-96eb26ec64c0";
-  const URL = "https://jsonblob.com/api/jsonBlob/" + BLOB;
-  // Global board is LOCAL-ONLY during development (jsonblob dropped CORS support).
-  // Flip REMOTE_ON to true and point URL at a CORS-enabled backend to go global.
-  const REMOTE_ON = false;
+  // Firebase Realtime Database (test-mode, public read/write) — sends CORS headers,
+  // unlike jsonblob, so global saves actually work in the browser. Stores the scores
+  // array directly at /scores.json.
+  const URL = "https://devils-lie-default-rtdb.firebaseio.com/scores.json";
+  const REMOTE_ON = true;
   const LS_SCORES = "devilslie.local.scores";
   const LS_GEO = "devilslie.geo";
   const LS_NAME = "devilslie.name";
@@ -76,7 +76,8 @@ window.LB = (function () {
       const r = await fetch(URL, { cache: "no-store" });
       if (!r.ok) throw new Error("bad status");
       const j = await r.json();
-      return Array.isArray(j.scores) ? j.scores : [];
+      // Firebase returns the array directly (null when empty); tolerate the old {scores:[]} shape too
+      return Array.isArray(j) ? j : (j && Array.isArray(j.scores) ? j.scores : []);
     } catch (e) { return null; }
   }
   async function fetchScores() {
@@ -103,9 +104,8 @@ window.LB = (function () {
       if (remote === null) return false;            // offline — local copy already saved
       const merged = dedupe(remote.concat([me]));
       const top = sortScores(merged).slice(0, 200);
-      // IMPORTANT: text/plain is a CORS-"simple" content type → no preflight OPTIONS.
-      // jsonblob 404s on OPTIONS, which silently blocked every write (the "saved locally" bug).
-      const r = await fetch(URL, { method: "PUT", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: JSON.stringify({ scores: top }) });
+      // text/plain is a CORS-"simple" content type → no preflight; Firebase stores the array directly.
+      const r = await fetch(URL, { method: "PUT", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: JSON.stringify(top) });
       return r.ok;
     } catch (e) { return false; }
   }

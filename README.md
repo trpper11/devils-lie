@@ -11,9 +11,8 @@ Rage, then laugh.
 Play as a **grumpy little red fellow** — angry brows, a handlebar moustache and
 tiny shoes — who bursts into shreds (or embers, in lava) when a trap gets him. Works on desktop
 (full-screen) and phones (landscape + translucent touch controls). Your name +
-country flag go on the leaderboard the moment you start — finishers rank
-first (fewest deaths, then time), everyone else by how far they got.
-*(The board is local during development; a global backend gets wired at launch.)*
+country flag go on the global leaderboard (Firebase) the moment you start —
+finishers rank first (fewest deaths, then time), everyone else by how far they got.
 
 ## Controls
 - **← → / A D** — move
