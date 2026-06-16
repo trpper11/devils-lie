@@ -883,22 +883,39 @@
     else { const v = Math.max(-1, Math.min(1, player.vy / 900)); sy = 1 + 0.10 * Math.abs(v); sx = 1 - 0.07 * Math.abs(v); }
 
     const moving = player.onGround && Math.abs(player.vx) > 60;
-    const step = moving ? Math.sin(player.runCycle) : 0; // feet alternate only while walking
+    const wcyc = player.runCycle;                 // walk phase
+    const ll = moving ? Math.max(0, Math.sin(wcyc)) * 5 : 0;   // left foot lifts…
+    const rl = moving ? Math.max(0, -Math.sin(wcyc)) * 5 : 0;  // …then the right (silly march)
+
+    // soft contact shadow on the ground (depth)
+    if (player.onGround) {
+      ctx.save(); ctx.translate(cx, cy + R + 11);
+      ctx.fillStyle = "rgba(0,0,0,0.32)"; ctx.beginPath(); ctx.ellipse(0, 0, R * 1.15, 3.4, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    }
 
     ctx.save();
     ctx.translate(cx, cy + R * (1 - sy)); ctx.scale(sx, sy);
 
-    // ---- tiny legs + Humpty-Dumpty shoes ----
-    const fy = R * 0.98;
-    ctx.strokeStyle = "#7a0c1c"; ctx.lineWidth = 3; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(-R * 0.42, R * 0.5); ctx.lineTo(-R * 0.42, fy - 3 - step * 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(R * 0.42, R * 0.5); ctx.lineTo(R * 0.42, fy - 3 + step * 3); ctx.stroke();
-    ctx.fillStyle = "#1c0a0e";
-    ctx.beginPath(); ctx.ellipse(-R * 0.42 - 1, fy - step * 3, 6, 3.4, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(R * 0.42 + 1, fy + step * 3, 6, 3.4, 0, 0, 7); ctx.fill();
+    // ---- long SLIM stick legs + big floppy shoes that splay OPPOSITE ways (Chaplin troll) ----
+    const legTop = R * 0.3, shoeY = R + 8;
+    ctx.strokeStyle = "#1a0e12"; ctx.lineWidth = 2.2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-3, legTop); ctx.lineTo(-9, shoeY - ll); ctx.stroke();   // left stick leg
+    ctx.beginPath(); ctx.moveTo(3, legTop); ctx.lineTo(9, shoeY - rl); ctx.stroke();     // right stick leg
+    function shoe(sxp, syp, sgn) {                 // sgn -1 = points left, +1 = points right
+      ctx.save(); ctx.translate(sxp, syp); ctx.rotate(sgn * 0.12);
+      ctx.fillStyle = "#120a0e";
+      ctx.beginPath(); ctx.ellipse(sgn * 3.5, 0, 9.5, 3.8, 0, 0, 7); ctx.fill();          // big toe out front
+      ctx.beginPath(); ctx.ellipse(-sgn * 3, -1.4, 3, 2.6, 0, 0, 7); ctx.fill();          // heel
+      ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.beginPath(); ctx.ellipse(sgn * 4, -1.4, 4, 1.1, 0, 0, 7); ctx.fill(); // shine
+      ctx.restore();
+    }
+    shoe(-9, shoeY - ll, -1);
+    shoe(9, shoeY - rl, 1);
 
     // ---- round body ----
     ctx.fillStyle = GRAD.balloon; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
+    ctx.strokeStyle = "rgba(80,0,12,0.5)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, R - 0.5, 0, 7); ctx.stroke(); // rim
     ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.ellipse(-R * 0.38, -R * 0.42, R * 0.16, R * 0.24, -0.5, 0, 7); ctx.fill();
 
     // ---- angry face ----
