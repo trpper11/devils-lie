@@ -1,5 +1,27 @@
 # Devil's Lie — Requests Tracker
 
+## Round 3 (2026-06-16) — "20 levels, harder, changing scenery, MORE troll" — ✅ ALL DONE
+
+- [x] **20 levels total**, difficulty steadily increasing (spd ramps 1.0→1.2; more/stacked traps).
+- [x] **Unprecedented out-of-the-blue lies (all passable):**
+  - `B` decoy — scenery rocks/spikes that LOOK like obstacles to jump but are harmless air (jump = land in a real trap; walk through = safe).
+  - `H` phantom gap — looks like a bottomless pit, is actually solid floor (walk right across the void).
+  - Reversed-controls zones (left=right) with on-screen ⇄ banner + tint.
+  - Runaway exit — the REAL door bolts to a new spot the moment you get close (🏃💨).
+- [x] **Scenery keeps changing** — 5 themes (Hellpit→Frostbite→Overgrowth→The Machine→The Void), background shifts every 4 levels + per-level variation (orb position, mountain phase, decor).
+- [x] **Scenery illusions** (the headline ask) — `B` (scenery that looks like an obstacle) and `H` (background gap that's solid) deliver both directions of the illusion.
+- [x] **MORE troll drama** — sassy eye-roll taunts on every level.
+
+### Verification — ✅ all passed
+- [x] All 20 levels proven solvable (headless sim, normal jump only) — incl. reverse-over-pit, reverse+teleport, fast-rhythm stacks
+- [x] 3 levels (L6/L16/L20) retuned to comfortable windows (0.96–1.24s, was 0.24–0.30s) and re-verified
+- [x] Code review of new systems — fixed: runaway-exit same-frame win guard, NaN-safe trap dp clamp
+- [x] All 5 themes render distinctly + new mechanics draw correctly (headless screenshots)
+- [x] Zero JS errors on boot through Level 20
+
+### Notes
+- localhost-only `?lvl=N` QA jump (inert on public site, so leaderboard stays honest).
+
 ## Round 2 (2026-06-16) — "full-fledged awesome game" — ✅ ALL DONE
 
 - [x] **R1. Mobile-friendly + landscape** — responsive DPR-aware scaling; animated "rotate your phone" overlay (CSS phone rotating) shown in portrait on touch devices, pauses the game.

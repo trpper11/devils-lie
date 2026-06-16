@@ -18,6 +18,33 @@
   const PW = 26, PH = 28; // balloon hitbox (a touch rounder)
 
   // =====================================================================
+  // THEMES — the scenery shifts every 4 levels (and varies per level)
+  // =====================================================================
+  const THEMES = [
+    { sky:["#2a0f1e","#1a0e16","#0c0a14"], glow:"rgba(255,120,90,0.18)", orb:"#ffd9a0",
+      mtnA:"rgba(70,28,40,0.55)", mtnB:"rgba(45,18,28,0.78)", sil:"rgba(22,10,16,0.85)",
+      blk:["#3a2630","#4a323e","#412a34","#291a22"], spk:["#eef0f6","#9498a6"],
+      ember:"rgba(255,150,80,0.55)", decor:"spikes", name:"Hellpit" },
+    { sky:["#0e2438","#0a1622","#06101a"], glow:"rgba(120,200,255,0.16)", orb:"#dcefff",
+      mtnA:"rgba(40,70,100,0.5)", mtnB:"rgba(24,44,66,0.78)", sil:"rgba(14,26,40,0.85)",
+      blk:["#27384a","#34495e","#2e3f52","#1d2a38"], spk:["#eaf4ff","#9fc0d8"],
+      ember:"rgba(170,220,255,0.5)", decor:"crystals", name:"Frostbite" },
+    { sky:["#13281c","#0d1b13","#08120c"], glow:"rgba(120,220,120,0.14)", orb:"#dfffb0",
+      mtnA:"rgba(34,70,40,0.5)", mtnB:"rgba(20,44,26,0.78)", sil:"rgba(12,26,16,0.85)",
+      blk:["#2a3a26","#384c30","#324428","#1f2c1a"], spk:["#eef0e0","#9aa878"],
+      ember:"rgba(180,255,150,0.45)", decor:"trees", name:"Overgrowth" },
+    { sky:["#1c1730","#13101e","#0a0812"], glow:"rgba(220,120,255,0.16)", orb:"#d6c4ff",
+      mtnA:"rgba(60,52,80,0.5)", mtnB:"rgba(38,32,54,0.78)", sil:"rgba(22,18,32,0.85)",
+      blk:["#34304a","#46415f","#3c3854","#23203a"], spk:["#dfe2ee","#9a9ab8"],
+      ember:"rgba(210,160,255,0.5)", decor:"gears", name:"The Machine" },
+    { sky:["#160a26","#0d0718","#04030a"], glow:"rgba(180,90,255,0.18)", orb:"#e6bcff",
+      mtnA:"rgba(48,28,72,0.55)", mtnB:"rgba(30,16,48,0.8)", sil:"rgba(16,8,26,0.88)",
+      blk:["#2e2444","#3e3058","#352a4c","#201838"], spk:["#f0d8ff","#b08ad0"],
+      ember:"rgba(210,140,255,0.55)", decor:"shards", name:"The Void" },
+  ];
+  let curTheme = THEMES[0];
+
+  // =====================================================================
   // LEVELS — ascii grids (20x12, row0 = sky). Legend:
   //  # solid   ^ spike   S start   E exit   F fake floor (looks solid, isn't)
   //  P popup spike   D guillotine (timed)   X crusher   M fake exit   O fall-through
@@ -54,7 +81,7 @@
       texts: [{c:1,t:"Two pits, two lies. Hop smart."},{c:14,t:"Door on the left? …sure it is."}] },
 
     { name: "Rhythm Hell",
-      grid: ["                    ","     D  D  D  XX    ","                    ","                    ",
+      grid: ["                    ","     D    D   XX    ","                    ","                    ",
              "                    ","                    ","                    ","                    ",
              "                    ","                    "," S              M E ","####################"],
       texts: [{c:1,t:"Feel the rhythm. Or feel the spikes."},{c:13,t:"The door is RIGHT there. (it lies)"}] },
@@ -69,7 +96,82 @@
       grid: ["                    ","         D   XX     ","                    ","                    ",
              "                    ","                    ","                    ","                    ",
              "                    ","                    "," S     P        M E ","####FF####FF########"],
-      texts: [{c:1,t:"Last one. Every trick at once."},{c:8,t:"Don't trust ANYTHING down here."},{c:15,t:"Final door. Or is it. 😈"}] },
+      texts: [{c:1,t:"Halfway. Every trick at once."},{c:8,t:"Don't trust ANYTHING down here."},{c:15,t:"Final door. Or is it. 😈"}] },
+
+    // ---- Theme 2: Overgrowth — scenery that LIES (decoys + phantom gaps) ----
+    { name: "Hall of Mirrors", spd: 1,
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S   BB    P    M E ","#######FF###########"],
+      texts: [{c:2,t:"Scary spikes! Better jump them, right? 🙄"},{c:7,t:"…or walk right through. They're fake, genius."},{c:14,t:"THIS door's real. probably. maybe. 😏"}] },
+
+    { name: "Phantom Floor", spd: 1,
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S              M E ","####HHHHHH##FF######"],
+      texts: [{c:2,t:"A bottomless pit! Definitely don't walk in. 😈"},{c:8,t:"…it was floor the whole time. you're welcome."},{c:11,t:"THIS gap is real though. (or is it 🙃)"}] },
+
+    { name: "Decoy Garden", spd: 1.1,
+      grid: ["                    ","             D      ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S    B    P    M E ","###HH###FF##########"],
+      texts: [{c:1,t:"Trust nothing. Not the floor, not the rocks."},{c:6,t:"that rock? fake. that gap? fake. that one? real. 🤡"},{c:13,t:"blade incoming. you're rolling your eyes, I can tell."}] },
+
+    { name: "Green Hell", spd: 1.15,
+      grid: ["                    ","          D         ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S      P       M E ","####HH######FF######"],
+      texts: [{c:1,t:"Jungle's end. Should be relaxing."},{c:8,t:"lol no."},{c:14,t:"so close. so very fake-close."}] },
+
+    // ---- Theme 3: The Machine — reversed controls + a runaway exit ----
+    { name: "Backwards", spd: 1, rev: [6, 13],
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S              M E ","#########FF#########"],
+      texts: [{c:1,t:"Clean corridor. What could go wrong."},{c:6,t:"wait… why is left now— 🙃 (controls reversed!)"},{c:14,t:"controls back to normal. you're welcome. eye-roll noted."}] },
+
+    { name: "Now You See It", spd: 1,
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S        E  M    @ ","####################"],
+      texts: [{c:1,t:"Door's right there. Walk over. Win. Easy."},{c:8,t:"🏃💨 the EXIT just RAN AWAY. of course it did."},{c:14,t:"not the fake door. chase the real one →"}] },
+
+    { name: "Double Trouble", spd: 1.2, rev: [10, 15],
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S      E    M    @ ","######FF############"],
+      texts: [{c:1,t:"Hop the gap, grab the door. simple."},{c:7,t:"runaway door + reversed controls. you're SO welcome 😈"},{c:13,t:"left is right, right is wrong, the door is gone. enjoy 🙃"}] },
+
+    { name: "Machine Finale", spd: 1.1,
+      grid: ["                    ","     D        XX    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S     B        M E ","##########FF########"],
+      texts: [{c:1,t:"Mind the gears. And the rocks. And the floor."},{c:7,t:"rock = fake. relax. now the blades = VERY real."},{c:14,t:"one crusher between you and smugness."}] },
+
+    // ---- Theme 4: The Void — EVERYTHING, faster, meaner ----
+    { name: "Void Gate", spd: 1.3, rev: [6, 11],
+      grid: ["                    ","                    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S      P       M E ","####FF####FF########"],
+      texts: [{c:1,t:"The Void. It's been waiting for you."},{c:6,t:"controls reversed OVER a pit. yeah. we went there 😈"},{c:14,t:"deep breath. roll those eyes. jump."}] },
+
+    { name: "Hide & Seek", spd: 1.3,
+      grid: ["                    ","      D    D        ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S   B   E      @  M","####################"],
+      texts: [{c:1,t:"Decoy rock, two blades, one runaway door. go."},{c:7,t:"and it's gone. 🏃 told you. catch it."},{c:14,t:"M is a lie. the real one bolted right. 🙄"}] },
+
+    { name: "Everything Lies", spd: 1.35, rev: [13, 17],
+      grid: ["                    ","            D       ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S  B     P    M  E ","##HH##FF############"],
+      texts: [{c:1,t:"phantom gap, fake rock, real pit, blade, reverse. casual."},{c:6,t:"are you rolling your eyes yet? GOOD. 😈"},{c:13,t:"reversed for the finish. of course. you knew."}] },
+
+    { name: "The Devil's Lie", spd: 1.2, rev: [4, 8],
+      grid: ["                    ","         D    XX    ","                    ","                    ",
+             "                    ","                    ","                    ","                    ",
+             "                    ","                    "," S      P   E     @ ","##FF################"],
+      texts: [{c:1,t:"Last lie. Pit, reverse, blade, runaway door, crusher."},{c:4,t:"reversed. obviously. it's the finale, did you expect mercy?"},{c:11,t:"the door RUNS. 🏃 ONE more crusher. then bragging rights."}] },
   ];
 
   // =====================================================================
@@ -92,6 +194,9 @@
   const geoLine = document.getElementById("geo-line");
 
   const isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+  // QA-only level jump (?lvl=N) — honored on localhost only, so the public board stays honest
+  let QA_LEVEL = 0;
+  try { if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) { const v = parseInt(new URLSearchParams(location.search).get("lvl")); if (v >= 1 && v <= 20) QA_LEVEL = v - 1; } } catch (e) {}
 
   let renderScale = 1;
   function resize() {
@@ -119,6 +224,7 @@
   let player, traps, grid, texts, collapsed, textShown, activeText, activeTextT;
   let levelTime = 0, animTime = 0, particles = [], shake = 0, hitStop = 0;
   let staticLayer = null, embers = [], GRAD = null;
+  let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
 
@@ -202,18 +308,27 @@
   function rowStr(g, r) { return g[r]; }
   function loadLevel(i) {
     levelIndex = i;
-    grid = LEVELS[i].grid;
-    texts = (LEVELS[i].texts || []).map(o => ({ col: o.c, text: o.t }));
+    const L = LEVELS[i];
+    grid = L.grid;
+    texts = (L.texts || []).map(o => ({ col: o.c, text: o.t }));
+    curTheme = THEMES[(L.theme != null ? L.theme : Math.floor(i / 4)) % THEMES.length];
+    const spd = L.spd || 1;
+    reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
+    exit = exitAlt = null; exitTeleported = false;
     let start = { c: 1, r: ROWS - 2 };
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c];
       if (ch === "S") start = { c, r };
+      else if (ch === "E") exit = { c, r };
+      else if (ch === "@") exitAlt = { c, r };
       else if (ch === "P") traps.push({ type: "popup", c, r, up: 0, triggered: false });
-      else if (ch === "D") traps.push({ type: "guillotine", c, r, period: 2.0, down: 0.85, off: c * 0.27 });
-      else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6, down: 1.0, off: 0 });
+      else if (ch === "D") traps.push({ type: "guillotine", c, r, period: 2.0 / spd, down: 0.85, off: c * 0.27 });
+      else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6 / spd, down: 1.0, off: 0 });
     }
     traps = mergeCrushers(traps);
+    exitHome = exit ? { c: exit.c, r: exit.r } : { c: COLS - 2, r: ROWS - 2 };
+    if (!exit) exit = { ...exitHome };
     player = player || {};
     player.startX = start.c * TILE + (TILE - PW) / 2;
     player.startY = start.r * TILE + (TILE - PH);
@@ -242,6 +357,7 @@
     pendingBig = false; lastJumpTap = -1;
     keys.left = keys.right = keys.jump = false;
     for (const t of traps) { t.up = 0; t.triggered = false; }
+    exit = { ...exitHome }; exitTeleported = false; reverseActive = false; // reset the runaway door
   }
 
   function die(popped) {
@@ -281,6 +397,7 @@
     if (r < 0 || r >= ROWS) return false;
     const ch = grid[r][c];
     if (ch === "#") return true;
+    if (ch === "H") return true;  // phantom gap: looks like a pit, is solid floor
     if (ch === "F") return false; // fake floor: drawn solid, never holds you
     return false;
   }
@@ -308,13 +425,13 @@
 
   // ---- trap rhythms ----
   function guillotineExtend(t) {
-    const p = ((levelTime + t.off) % t.period) / t.period, dp = t.down / t.period;
+    const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
     if (p < dp * 0.4) return p / (dp * 0.4);
     if (p < dp) return 1;
     return Math.max(0, 1 - (p - dp) / (1 - dp));
   }
   function crusherDown(t) {
-    const p = ((levelTime + t.off) % t.period) / t.period, dp = t.down / t.period;
+    const p = ((levelTime + t.off) % t.period) / t.period, dp = Math.min(0.95, t.down / t.period);
     if (p < dp * 0.25) return p / (dp * 0.25);
     if (p < dp) return 1;
     return Math.max(0, 1 - (p - dp) / (1 - dp));
@@ -367,9 +484,8 @@
       const ch = grid[r][c];
       if (ch === "^" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 14, TILE - 12, TILE - 14)) return "pop";
       if (ch === "M" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
-      if (ch === "E" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "win";
     }
-    return null;
+    return null; // real exit (incl. the runaway one) is checked from the `exit` object in step()
   }
 
   // =====================================================================
@@ -383,7 +499,9 @@
     if (player.dead) { player.deathT += dt; if (player.deathT > 0.7) respawn(); return; }
     levelTime += dt;
 
-    const want = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    let want = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    reverseActive = false;
+    if (reverseRange) { const pcx = player.x + PW / 2; reverseActive = pcx >= reverseRange[0] && pcx < reverseRange[1]; if (reverseActive) want = -want; }
     if (want !== 0) player.facing = want;
     const a = player.onGround ? ACCEL : AIR_ACCEL;
     if (want !== 0) { player.vx += want * a * dt; player.vx = Math.max(-MOVE, Math.min(MOVE, player.vx)); }
@@ -423,7 +541,17 @@
     const hit = checkTiles();
     if (hit === "pop") { die(true); return; }
     if (hit === "die") { die(false); return; }
-    if (hit === "win") {
+    // runaway exit: get close and the REAL door bolts to its alt spot (once)
+    if (exitAlt && !exitTeleported) {
+      const ecx = exit.c * TILE + TILE / 2, ecy = exit.r * TILE + TILE / 2;
+      if (Math.hypot((player.x + PW / 2) - ecx, (player.y + PH / 2) - ecy) < TILE * 2.6) {
+        exit = exitAlt; exitTeleported = true;
+        activeText = "🏃💨 nope!"; activeTextT = 1.6; tone(720, 0.1, "square", 0.06, 1300);
+        for (let k = 0; k < 14; k++) particles.push({ x: ecx, y: ecy, vx: (Math.random() - .5) * 260, vy: (Math.random() - .5) * 260, life: 0.5, r: 3, col: "#ffcf5c" });
+        return; // don't let WIN fire on the same frame the door bolts away
+      }
+    }
+    if (overlap(player.x, player.y, PW, PH, exit.c * TILE + 6, exit.r * TILE + 4, TILE - 12, TILE - 4)) {
       if (levelIndex + 1 < LEVELS.length) { sndWin(); loadLevel(levelIndex + 1); }
       else winGame(); // winGame plays its own fanfare
       return;
@@ -447,54 +575,79 @@
   // Static background layer (cached per level for performance)
   // =====================================================================
   function buildStaticLayer() {
+    const T = curTheme;
     staticLayer = document.createElement("canvas");
     staticLayer.width = W; staticLayer.height = H;
     const g = staticLayer.getContext("2d");
     // sky
     const sky = g.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, "#241531"); sky.addColorStop(0.5, "#1a1024"); sky.addColorStop(1, "#0c0a14");
+    sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.55, T.sky[1]); sky.addColorStop(1, T.sky[2]);
     g.fillStyle = sky; g.fillRect(0, 0, W, H);
-    // moon glow
-    const moon = g.createRadialGradient(W * 0.78, H * 0.26, 8, W * 0.78, H * 0.26, 120);
-    moon.addColorStop(0, "rgba(255,210,130,0.5)"); moon.addColorStop(0.4, "rgba(255,120,90,0.15)"); moon.addColorStop(1, "transparent");
-    g.fillStyle = moon; g.fillRect(0, 0, W, H);
-    g.fillStyle = "rgba(255,225,170,0.9)"; g.beginPath(); g.arc(W * 0.78, H * 0.26, 26, 0, 7); g.fill();
-    // parallax jagged mountains (2 layers)
+    // glow + orb (orb shifts across each 4-level zone)
+    const ox = W * (0.22 + 0.5 * ((levelIndex % 4) / 3));
+    const glow = g.createRadialGradient(ox, H * 0.26, 8, ox, H * 0.26, 150);
+    glow.addColorStop(0, T.glow); glow.addColorStop(0.5, T.glow); glow.addColorStop(1, "transparent");
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    g.fillStyle = T.orb; g.beginPath(); g.arc(ox, H * 0.26, 24, 0, 7); g.fill();
+    drawDecorBg(g, T);
+    // parallax mountains (phase varies per level so each looks different)
+    const ph = levelIndex * 0.8;
     function range(baseY, amp, color) {
       g.fillStyle = color; g.beginPath(); g.moveTo(0, H);
-      for (let x = 0; x <= W; x += 40) { const y = baseY + Math.sin(x * 0.04) * amp + ((x / 40) % 2 ? -amp * 0.4 : amp * 0.4); g.lineTo(x, y); }
+      for (let x = 0; x <= W; x += 40) { const y = baseY + Math.sin(x * 0.04 + ph) * amp + ((x / 40) % 2 ? -amp * 0.4 : amp * 0.4); g.lineTo(x, y); }
       g.lineTo(W, H); g.closePath(); g.fill();
     }
-    range(H * 0.62, 26, "rgba(60,30,55,0.55)");
-    range(H * 0.74, 34, "rgba(40,18,38,0.75)");
-    // distant spike silhouettes
-    g.fillStyle = "rgba(20,10,22,0.85)";
+    range(H * 0.62, 26, T.mtnA);
+    range(H * 0.74, 34, T.mtnB);
+    g.fillStyle = T.sil;
     for (let x = 0; x < W; x += 22) { g.beginPath(); g.moveTo(x, H); g.lineTo(x + 11, H - 22 - (x % 60) * 0.2); g.lineTo(x + 22, H); g.closePath(); g.fill(); }
-    // tiles: solid blocks + static spikes (these never move) — cached here
+    // static tiles: solid #, spikes ^, decoy B; H draws NOTHING (looks like a gap, is floor)
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "#") drawBlockTo(g, x, y);
       else if (ch === "^") drawSpikeTo(g, x, y);
+      else if (ch === "B") drawDecoyTo(g, x, y);
     }
     // vignette
     const vg = g.createRadialGradient(W / 2, H / 2, H * 0.4, W / 2, H / 2, H * 0.85);
     vg.addColorStop(0, "transparent"); vg.addColorStop(1, "rgba(0,0,0,0.55)");
     g.fillStyle = vg; g.fillRect(0, 0, W, H);
-    // embers
     embers = []; for (let i = 0; i < 26; i++) embers.push({ x: Math.random() * W, y: Math.random() * H, s: 8 + Math.random() * 20, w: 1 + Math.random() * 2, o: Math.random() * 9, r: 1 + Math.random() * 2 });
   }
+  function drawDecorBg(g, T) {
+    g.save(); g.globalAlpha = 0.5; g.fillStyle = T.mtnA;
+    for (let i = 0; i < 7; i++) {
+      const x = ((i * 137 + levelIndex * 53) % (W - 40)) + 20, y = H * 0.34 + ((i * 71 + levelIndex * 29) % 90);
+      g.fillStyle = T.mtnA;
+      if (T.decor === "crystals") { g.beginPath(); g.moveTo(x, y + 22); g.lineTo(x + 7, y); g.lineTo(x + 14, y + 22); g.closePath(); g.fill(); }
+      else if (T.decor === "trees") { g.fillRect(x + 6, y + 8, 4, 16); g.beginPath(); g.arc(x + 8, y + 8, 11, 0, 7); g.fill(); }
+      else if (T.decor === "gears") { g.beginPath(); g.arc(x + 9, y + 9, 10, 0, 7); g.fill(); g.fillStyle = T.sky[1]; g.beginPath(); g.arc(x + 9, y + 9, 4, 0, 7); g.fill(); }
+      else if (T.decor === "shards") { g.beginPath(); g.moveTo(x, y); g.lineTo(x + 12, y + 8); g.lineTo(x + 4, y + 24); g.closePath(); g.fill(); }
+      else { g.beginPath(); g.moveTo(x, y + 20); g.lineTo(x + 8, y); g.lineTo(x + 16, y + 20); g.closePath(); g.fill(); }
+    }
+    g.restore();
+  }
   function drawBlockTo(g, x, y) {
-    g.fillStyle = "#33324e"; g.fillRect(x, y, TILE, TILE);
-    g.fillStyle = "#43425f"; g.fillRect(x, y, TILE, 6);
-    g.fillStyle = "#3a3a58"; g.fillRect(x + 3, y + 8, TILE - 6, TILE - 12);
-    g.fillStyle = "#23223c"; g.fillRect(x, y + TILE - 4, TILE, 4);
+    const B = curTheme.blk;
+    g.fillStyle = B[0]; g.fillRect(x, y, TILE, TILE);
+    g.fillStyle = B[1]; g.fillRect(x, y, TILE, 6);
+    g.fillStyle = B[2]; g.fillRect(x + 3, y + 8, TILE - 6, TILE - 12);
+    g.fillStyle = B[3]; g.fillRect(x, y + TILE - 4, TILE, 4);
     g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 1; g.strokeRect(x + .5, y + .5, TILE - 1, TILE - 1);
   }
   function drawSpikeTo(g, x, y) {
-    const grd = g.createLinearGradient(x, y, x, y + TILE); grd.addColorStop(0, "#eef0f6"); grd.addColorStop(1, "#9498a6");
+    const S = curTheme.spk;
+    const grd = g.createLinearGradient(x, y, x, y + TILE); grd.addColorStop(0, S[0]); grd.addColorStop(1, S[1]);
     g.fillStyle = grd; const n = 4, w = TILE / n;
     for (let i = 0; i < n; i++) { g.beginPath(); g.moveTo(x + i * w, y + TILE); g.lineTo(x + i * w + w / 2, y + 10); g.lineTo(x + (i + 1) * w, y + TILE); g.closePath(); g.fill(); }
     g.fillStyle = "#6a6d7a"; g.fillRect(x, y + TILE - 4, TILE, 4);
+  }
+  function drawDecoyTo(g, x, y) {
+    // looks like a spiky obstacle you must jump — but it's just scenery (non-solid, non-deadly)
+    g.fillStyle = curTheme.mtnB;
+    g.beginPath(); g.moveTo(x + 3, y + TILE); g.lineTo(x + TILE * 0.5, y + 6); g.lineTo(x + TILE - 3, y + TILE); g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,255,255,0.07)";
+    g.beginPath(); g.moveTo(x + TILE * 0.5, y + 6); g.lineTo(x + TILE * 0.5 + 4, y + 18); g.lineTo(x + TILE * 0.5 - 2, y + 18); g.closePath(); g.fill();
   }
 
   // =====================================================================
@@ -509,18 +662,27 @@
     else { ctx.fillStyle = "#0d0d16"; ctx.fillRect(0, 0, W, H); }
 
     // embers
-    ctx.fillStyle = "rgba(255,170,90,0.5)";
+    ctx.fillStyle = curTheme.ember;
     for (const e of embers) { ctx.globalAlpha = 0.3 + 0.4 * Math.abs(Math.sin((animTime + e.o) * e.w)); ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, 7); ctx.fill(); }
     ctx.globalAlpha = 1;
 
-    // fake floors (drawn IDENTICAL to solid — the trick) + doors + traps
+    // reverse-control zone tint (the floor's normal; your controls aren't)
+    if (reverseRange) {
+      const rx = reverseRange[0], rw = reverseRange[1] - reverseRange[0];
+      ctx.fillStyle = reverseActive ? "rgba(180,80,255,0.20)" : "rgba(150,80,255,0.07)";
+      ctx.fillRect(rx, 0, rw, H);
+      ctx.strokeStyle = "rgba(200,140,255,0.4)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, H); ctx.moveTo(rx + rw, 0); ctx.lineTo(rx + rw, H); ctx.stroke();
+    }
+
+    // fake floors (drawn IDENTICAL to solid — the trick) + decoy platforms + fake doors
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "F" && !collapsed.has(c + "," + r)) drawBlockTo(ctx, x, y);
       else if (ch === "O") drawFakePlatform(x, y);
-      else if (ch === "E") drawDoor(x, y, true);
       else if (ch === "M") drawDoor(x, y, false);
     }
+    if (exit) drawDoor(exit.c * TILE, exit.r * TILE, true); // the real (possibly runaway) door
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
       if (t.type === "popup" && t.up > 0.02) drawSpikeColumn(tx, ty + TILE - TILE * 0.85 * t.up, TILE * 0.85 * t.up);
@@ -529,6 +691,12 @@
     }
 
     if (!player.dead && state === "play") drawPlayer();
+
+    // reversed-controls banner
+    if (reverseActive) {
+      ctx.fillStyle = "#e0b0ff"; ctx.font = "bold 14px Poppins, sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("⇄  CONTROLS REVERSED  ⇄", (reverseRange[0] + reverseRange[1]) / 2, 116); ctx.textAlign = "left";
+    }
 
     for (const p of particles) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.col;
@@ -691,7 +859,7 @@
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden"); lbScreen.classList.add("hidden");
     if (isTouch) touchUI.classList.remove("hidden");
     state = "play";
-    loadLevel(0);
+    loadLevel(QA_LEVEL);
   }
   document.getElementById("start-btn").addEventListener("click", startGame);
   document.getElementById("again-btn").addEventListener("click", startGame);

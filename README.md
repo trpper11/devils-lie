@@ -6,7 +6,7 @@ toward kills you. Every trap is **fair**: there's always a safe path if you're
 smarter (and faster) than the level expects. Death is instant. Respawn is instant.
 Rage, then laugh.
 
-**[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 8 hand-built levels &nbsp;•&nbsp; 6 kinds of lie &nbsp;•&nbsp; global leaderboard 🏆
+**[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 20 levels &nbsp;•&nbsp; 5 themed worlds &nbsp;•&nbsp; 10 kinds of lie &nbsp;•&nbsp; global leaderboard 🏆
 
 Play as a living red **balloon** — eyes, little feet, squash & stretch, and it
 bursts into shreds when a spike pops it. Works on desktop (full-screen) and
@@ -29,15 +29,16 @@ leaderboard ranked by fewest deaths.
 | The exit door | **Fake exit** — kills you. The real one is elsewhere. |
 | A platform | **Fall-through** — you drop right past it |
 
-## Levels (8)
-1. **Just walk to the door** — it's never that easy.
-2. **Trust the floor** — don't take the obvious bridge.
-3. **Look up. Look out.** — rhythm + the wrong door.
-4. **The Gauntlet** — everything you learned, at once.
-5. **Double Cross** — two pits, two lies.
-6. **Rhythm Hell** — three guillotines and a crusher.
-7. **Spike Garden** — it bites.
-8. **The Big Lie** — every trick at once.
+## 20 levels across 5 themed worlds
+The scenery changes every 4 levels and the lies get meaner:
+1. **Hellpit** (1-4) — the basics betray you.
+2. **Frostbite** (5-8) — pits, rhythm, the wrong door.
+3. **Overgrowth** (9-12) — **the scenery lies**: rocks that look like obstacles but are air, "pits" that are actually solid floor.
+4. **The Machine** (13-16) — **reversed controls** and a **runaway exit** that bolts when you get close.
+5. **The Void** (17-20) — everything at once, faster, meaner. Good luck.
+
+### The lies
+Fake floors • popup spikes • guillotines • crushers • fake exits • fall-through platforms • **decoy scenery** • **phantom (solid) gaps** • **reversed controls** • **a teleporting exit**.
 
 ## Tech
 Pure vanilla JS + Canvas. No assets, no dependencies, no build step — one
