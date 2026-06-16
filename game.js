@@ -417,9 +417,6 @@
       if (Math.random() < 0.12) particles.push({ x: player.x + PW / 2, y: player.y + PH, vx: -player.facing * 60 * Math.random(),
         vy: -Math.random() * 20, life: 0.25, r: 2, col: "#6b6b86" });
     }
-    // trail
-    player.trail.push({ x: player.x + PW / 2, y: player.y + PH / 2 });
-    if (player.trail.length > 6) player.trail.shift();
 
     if (player.y > H + 40) { die(false); return; }
     const td = updateTraps(dt); if (td) { die(td === 2); return; }
@@ -596,10 +593,6 @@
   function drawPlayer() {
     const cx = player.x + PW / 2, cy = player.y + PH / 2;
     const R = PW / 2 + 1;
-    // trail
-    for (let i = 0; i < player.trail.length; i++) { const tp = player.trail[i], a = (i / player.trail.length) * 0.18;
-      ctx.globalAlpha = a; ctx.fillStyle = "#ff5d9e"; ctx.beginPath(); ctx.arc(tp.x, tp.y, R * (0.5 + i / player.trail.length * 0.4), 0, 7); ctx.fill(); }
-    ctx.globalAlpha = 1;
 
     // squash & stretch
     let sx = 1, sy = 1;
