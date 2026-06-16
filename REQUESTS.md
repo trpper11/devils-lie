@@ -1,5 +1,16 @@
 # Devil's Lie — Requests Tracker
 
+## Round 6 (2026-06-16) — "graphics/animation polish: controls, hitbox, smoothness" — ✅ ALL DONE
+
+1. [x] **Reliable controls + scheme** — rewrote keyboard input: **W / ↑ / Space = jump, A/D = left/right**, R = restart. Movement keys are tracked independently of game-state and **no longer cleared on respawn**, so a held key keeps you moving after dying/changing levels (the "WASD sometimes stop working" bug). Added a window-blur reset (no stuck keys) and made sure typing your name is never hijacked. **Double jump fixed**: the old double-tap "big jump" was effectively unreachable (2nd tap landed after the jump fired) — replaced with a real **mid-air double jump** (press jump again in the air, once per airtime; ~95px vs 59px single, verified).
+2. [x] **Accurate hitbox** — hazards (spikes/lava/popups/shards/crushers) now test a **tighter box inset to match the round balloon** (HBX/HBY=3) instead of the full solid-collision box, and **spikes are deadly right up to their tips** (raised the deadly region ~5px) so you pop on *touch* instead of sinking into the needle first. Solid/world collision (PW/PH) unchanged so platforming stays tuned.
+3. [x] **Much smoother animation (CRITICAL)** — added **render interpolation**: the player is drawn interpolated between the last two 120 Hz physics ticks (`acc/DT`), decoupling the sim from the display refresh. Eliminates stutter/jitter on any refresh rate (incl. high-Hz screens where some frames did 0 physics steps and the player appeared to freeze). Builds on Round 5's eased character animation.
+
+### Verification — ✅ all passed
+- [x] Input cross-tested with **real keyboard events**: D/A move, W/Space jump, double jump clearly higher, hazards kill, **held key resumes after respawn**.
+- [x] Hazard/hitbox changes mirrored into the verifier; **all 50 levels re-proven solvable**; 8 solver plans (spike/lava/bounce levels + L50→win) replayed in the REAL engine and won.
+- [x] Zero JS errors swept across all 50 levels.
+
 ## Round 5 (2026-06-16) — "control options, fix twitch, Stage 2 / new elements, music" — ✅ ALL DONE
 
 1. [x] **Settings panel + control options + transparency** — ⚙ button (top-right). Choose on-screen controls **Auto / On / Off** (mouse users can now turn the buttons on); **transparency slider** for the buttons; buttons restyled from white to dark smoky glass so they don't hide the balloon. Persisted to localStorage.

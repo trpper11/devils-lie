@@ -12,10 +12,11 @@
   const H = ROWS * TILE; // 480
 
   // ---- Physics (px, seconds) ------------------------------------------
-  const GRAVITY = 2400, MOVE = 250, JUMP = 700, BIG_JUMP = 980, BOUNCE = 980;
+  const GRAVITY = 2400, MOVE = 250, JUMP = 700, BIG_JUMP = 980, BOUNCE = 980, DBL_JUMP = 660;
   const MAX_FALL = 900, ACCEL = 2600, AIR_ACCEL = 1800, FRICTION = 2200;
   const COYOTE = 0.10, JUMP_BUF = 0.12, DBL_TAP = 0.30;
-  const PW = 26, PH = 28; // balloon hitbox (a touch rounder)
+  const PW = 26, PH = 28;   // solid-collision box (floors/walls/gaps) — unchanged so platforming stays tuned
+  const HBX = 3, HBY = 3;   // hazard box inset — spikes/lava/traps test this tighter box (matches the round balloon)
 
   // =====================================================================
   // THEMES — the scenery shifts every 4 levels (and varies per level)
@@ -92,20 +93,28 @@
   let lastJumpTap = -1, pendingBig = false;
 
   function pressJump() {
-    if (animTime - lastJumpTap < DBL_TAP) pendingBig = true;
     lastJumpTap = animTime;
-    player.jumpBuf = JUMP_BUF;
+    if (player.onGround || player.coyote > 0) {
+      player.jumpBuf = JUMP_BUF;            // ground jump (buffered with coyote-time)
+    } else if (!player.dblUsed) {
+      player.vy = -DBL_JUMP;                // mid-air DOUBLE JUMP — press jump again in the air (once)
+      player.dblUsed = true;
+      sndJump(true);
+    }
     keys.jump = true;
   }
   function releaseJump() { keys.jump = false; }
 
+  // Robust keyboard: movement flags are always tracked (effect only applies while
+  // playing), so a held key keeps working across deaths/level loads. Jump/restart
+  // only fire during play. Typing your name is never hijacked.
   window.addEventListener("keydown", (e) => {
-    if (state !== "play") return;
+    if (e.target === nameInput) return;                 // let the name field type freely
     const k = e.key.toLowerCase();
     if (k === "arrowleft" || k === "a") { keys.left = true; e.preventDefault(); }
     else if (k === "arrowright" || k === "d") { keys.right = true; e.preventDefault(); }
-    else if ((k === "arrowup" || k === "w" || k === " ") && !e.repeat) { pressJump(); e.preventDefault(); }
-    else if (k === "r") { respawn(); }
+    else if (k === "arrowup" || k === "w" || k === " ") { if (state === "play" && !e.repeat) pressJump(); e.preventDefault(); }
+    else if (k === "r") { if (state === "play") respawn(); }
   });
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
@@ -113,6 +122,8 @@
     else if (k === "arrowright" || k === "d") keys.right = false;
     else if (k === "arrowup" || k === "w" || k === " ") releaseJump();
   });
+  // never get stuck "holding" a key when focus leaves the window
+  window.addEventListener("blur", () => { keys.left = keys.right = keys.jump = false; });
 
   // touch buttons
   function bindHold(id, on, off) {
@@ -282,15 +293,16 @@
   }
   function respawn() {
     player.x = player.startX; player.y = player.startY;
+    player.prevX = player.x; player.prevY = player.y; // interpolation: no glide from the old spot
     player.vx = 0; player.vy = 0;
     player.onGround = false; player.coyote = 0; player.jumpBuf = 0; player.facing = 1;
     player.dead = false; player.deathT = 0; player.landT = 1; player.runCycle = 0; player.fear = 0;
-    player.trail = [];
+    player.look = player.facing; player.feet = 0; player.dblUsed = false;
     collapsed = new Set();
     textShown = new Set();
     activeText = null; activeTextT = 0; levelTime = 0;
-    pendingBig = false; lastJumpTap = -1;
-    keys.left = keys.right = keys.jump = false;
+    pendingBig = false; lastJumpTap = -1; keys.jump = false;
+    // NOTE: keys.left/right are intentionally NOT cleared here, so a held key keeps you moving after respawn
     for (const t of traps) { t.up = 0; t.triggered = false; }
     exit = { ...exitHome }; exitTeleported = false; reverseActive = false; // reset the runaway door
   }
@@ -381,6 +393,8 @@
 
   function updateTraps(dt) {
     const px = player.x, py = player.y; let dead = 0, hazardNear = 0;
+    // tighter hazard box (HB*) — matches the round balloon so deaths read as real touches
+    const hx = px + HBX, hy = py + HBY, hw = PW - 2 * HBX, hh = PH - 2 * HBY;
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
       if (t.type === "popup") {
@@ -389,15 +403,15 @@
         t.up = Math.min(1, t.up + (t.triggered ? dt * 16 : -dt * 6));
         if (Math.abs((px + PW / 2) - cx) < TILE * 1.4) hazardNear = 1;
         if (t.up > 0.12) { const sh = TILE * 0.85 * t.up;
-          if (overlap(px, py, PW, PH, tx + 4, ty + TILE - sh, TILE - 8, sh)) dead = t.type === "popup" ? 2 : 1; }
+          if (overlap(hx, hy, hw, hh, tx + 6, ty + TILE - sh, TILE - 12, sh)) dead = 2; }
       } else if (t.type === "guillotine") {
         const f = guillotineExtend(t), len = guillotineLen(t, f);
         if (Math.abs((px + PW / 2) - (tx + TILE / 2)) < TILE * 1.4) hazardNear = 1;
-        if (f > 0.05 && overlap(px, py, PW, PH, tx + 8, ty, TILE - 16, len)) dead = 2;
+        if (f > 0.05 && overlap(hx, hy, hw, hh, tx + 8, ty, TILE - 16, len)) dead = 2;
       } else if (t.type === "crusher") {
         const f = crusherDown(t), w = (t.w || 1) * TILE, by = ty + crusherTravel(t) * f;
         if (overlap(px, py, PW, PH, tx - 6, ty, w + 12, by - ty + TILE + 8)) hazardNear = 1;
-        if (f > 0.02 && overlap(px, py, PW, PH, tx, ty, w, by - ty + TILE)) dead = 1;
+        if (f > 0.02 && overlap(hx, hy, hw, hh, tx, ty, w, by - ty + TILE)) dead = 1;
       }
     }
     // fake floors shatter the instant you touch them (robust: no onGround reliance)
@@ -417,15 +431,18 @@
   }
 
   function checkTiles() {
-    const c1 = Math.floor(player.x / TILE), c2 = Math.floor((player.x + PW - 1) / TILE);
-    const r1 = Math.floor(player.y / TILE), r2 = Math.floor((player.y + PH - 1) / TILE);
+    // tighter hazard box than the solid-collision box, matching the round balloon
+    const hx = player.x + HBX, hy = player.y + HBY, hw = PW - 2 * HBX, hh = PH - 2 * HBY;
+    const c1 = Math.floor(hx / TILE), c2 = Math.floor((hx + hw - 1) / TILE);
+    const r1 = Math.floor(hy / TILE), r2 = Math.floor((hy + hh - 1) / TILE);
     for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) {
       if (c < 0 || c >= COLS || r < 0 || r >= ROWS) continue;
       const ch = grid[r][c];
-      if (ch === "^" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 14, TILE - 12, TILE - 14)) return "pop";
-      if (ch === "M" && overlap(player.x, player.y, PW, PH, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
+      // spikes are deadly right up to their tips now — touch a needle, pop instantly
+      if (ch === "^" && overlap(hx, hy, hw, hh, c * TILE + 5, r * TILE + 9, TILE - 10, TILE - 9)) return "pop";
+      if (ch === "M" && overlap(hx, hy, hw, hh, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
       // real lava: surface is deadly (top ~60% of the tile so the floor edge stays fair)
-      if (ch === "L" && overlap(player.x, player.y, PW, PH, c * TILE, r * TILE + 8, TILE, TILE - 8)) return "burn";
+      if (ch === "L" && overlap(hx, hy, hw, hh, c * TILE, r * TILE + 8, TILE, TILE - 8)) return "burn";
     }
     return null; // real exit (incl. the runaway one) is checked from the `exit` object in step()
   }
@@ -437,6 +454,8 @@
   function step(dt) {
     if (state !== "play") return;
     animTime += dt;
+    // remember the pre-step position so render() can interpolate between physics ticks
+    if (player) { player.prevX = player.x; player.prevY = player.y; }
 
     if (player.dead) { player.deathT += dt; if (player.deathT > 0.7) respawn(); return; }
     levelTime += dt;
@@ -463,7 +482,7 @@
     player.onGround = false;
     moveAxis(player.vx * dt, 0);
     moveAxis(0, player.vy * dt);
-    if (!wasGround && player.onGround) { player.landT = 0; sndLand(); } // landed (squash handles the juice; no dust puffs)
+    if (!wasGround && player.onGround) { player.landT = 0; player.dblUsed = false; sndLand(); } // landed; refresh the double jump
     // bounce pad: standing on a J tile flings you upward (enables vertical play)
     if (player.onGround) {
       const fr = Math.floor((player.y + PH) / TILE);
@@ -597,6 +616,14 @@
   // Render
   // =====================================================================
   function render() {
+    // Interpolate the player between the last two physics ticks for silky motion
+    // (decouples the 120 Hz sim from the display refresh — no stutter on any screen).
+    if (player) {
+      const a = Math.max(0, Math.min(1, acc / DT));
+      if (player.prevX === undefined) { player.prevX = player.x; player.prevY = player.y; }
+      player.rx = player.prevX + (player.x - player.prevX) * a;
+      player.ry = player.prevY + (player.y - player.prevY) * a;
+    }
     ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
     let ox = 0, oy = 0;
     if (shake > 0) { ox = (Math.random() - .5) * shake; oy = (Math.random() - .5) * shake; ctx.translate(ox, oy); }
@@ -779,7 +806,8 @@
   }
 
   function drawPlayer() {
-    const cx = player.x + PW / 2, cy = player.y + PH / 2;
+    const px = player.rx !== undefined ? player.rx : player.x, py = player.ry !== undefined ? player.ry : player.y;
+    const cx = px + PW / 2, cy = py + PH / 2;
     const R = PW / 2 + 1;
 
     // --- smoothed animation values (eased, so nothing snaps/twitches) ---
@@ -914,6 +942,7 @@
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden"); lbScreen.classList.add("hidden");
     document.getElementById("settings-screen").classList.add("hidden");
     document.getElementById("stage-screen").classList.add("hidden");
+    keys.left = keys.right = keys.jump = false;
     state = "play";
     updateTouchVisibility();
     if (settings.music) startMusic();

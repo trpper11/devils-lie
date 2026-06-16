@@ -15,7 +15,7 @@ country flag go on a global leaderboard ranked by fewest deaths.
 
 ## Controls
 - **← → / A D** — move
-- **SPACE / ↑ / W** — jump (hold for higher; **tap twice = big jump**)
+- **W / ↑ / SPACE** — jump (hold for higher; **press again in mid-air = double jump**)
 - **R** — restart the level
 - **⛶** — fullscreen &nbsp;•&nbsp; **⚙** settings &nbsp;•&nbsp; **🔊** music on/off (top-right)
 - On-screen ◀ ▶ + JUMP buttons (auto on phones; mouse users can enable them in **Settings**, with an adjustable transparency slider)
@@ -55,8 +55,9 @@ The scenery changes every 5 levels and the lies get meaner:
 ## Tech
 Pure vanilla JS + Canvas. No assets, no dependencies, no build step — one
 `index.html`, one `style.css`, `levels.js` (all 50 levels + themes), `leaderboard.js`,
-`game.js`. Fixed-timestep physics (120 Hz), coyote-time + jump-buffer for tight
-controls, WebAudio blips for sound, parallax backgrounds cached per level.
+`game.js`. Fixed-timestep physics (120 Hz) with **render interpolation** for smooth
+motion on any refresh rate, coyote-time + jump-buffer + mid-air double jump for tight
+controls, WebAudio for sound + procedural music, parallax backgrounds cached per level.
 
 Levels and themes live in `levels.js` as a single source of truth, shared by the
 game **and** a headless physics verifier.
