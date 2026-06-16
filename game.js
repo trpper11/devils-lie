@@ -336,8 +336,8 @@
     submitStatus.textContent = "Saving your score…";
     winScreen.classList.remove("hidden");
     LB.finish({ name: playerName, cc: playerGeo.cc, country: playerGeo.country, deaths, time: +runElapsed.toFixed(1), totalLevels: LEVELS.length })
-      .then(ok => { submitStatus.textContent = ok ? "✓ Score saved to the global leaderboard." : "⚠ Saved locally (couldn't reach global board)."; })
-      .catch(() => { submitStatus.textContent = "⚠ Saved locally only."; });
+      .then(ok => { submitStatus.textContent = ok ? "✓ Score saved to the global leaderboard." : "✓ Score saved to your leaderboard."; })
+      .catch(() => { submitStatus.textContent = "✓ Score saved."; });
   }
 
   // =====================================================================
@@ -869,54 +869,60 @@
     ctx.restore();
   }
 
+  // A grumpy little fellow — angry brows, a handlebar moustache and tiny shoes.
+  // Deliberately STILL: the only motion is a subtle landing squash and a walk
+  // cycle that runs only while actually moving — so it never "twitches".
   function drawPlayer() {
     const px = player.rx !== undefined ? player.rx : player.x, py = player.ry !== undefined ? player.ry : player.y;
-    const cx = px + PW / 2, cy = py + PH / 2;
-    const R = PW / 2 + 1;
+    const cx = px + PW / 2, cy = py + PH / 2, R = PW / 2 + 1;
+    const dir = player.facing >= 0 ? 1 : -1;
 
-    // --- smoothed animation values (eased, so nothing snaps/twitches) ---
-    if (player.look === undefined) { player.look = player.facing; player.feet = 0; }
-    const ease = Math.min(1, animDt * 12);
-    player.look += (player.facing - player.look) * ease;       // eyes glide toward facing
-    const moving = player.onGround && Math.abs(player.vx) > 40;
-    const feetTarget = moving ? Math.sin(player.runCycle) : 0;  // feet settle level when idle
-    player.feet += (feetTarget - player.feet) * Math.min(1, animDt * 18);
-    const fear = player.fear;
-
-    // gentle squash & stretch (small amplitudes — calm, not jumpy)
+    // subtle squash on landing / stretch in the air — no idle animation at all
     let sx = 1, sy = 1;
-    if (player.onGround) { const land = Math.min(1, player.landT * 9); sx = 1 + 0.13 * (1 - land); sy = 1 - 0.13 * (1 - land); }
-    else { const v = Math.max(-1, Math.min(1, player.vy / 800)); sy = 1 + 0.14 * Math.abs(v); sx = 1 - 0.10 * Math.abs(v); }
+    if (player.onGround) { const land = Math.min(1, player.landT * 11); sx = 1 + 0.10 * (1 - land); sy = 1 - 0.10 * (1 - land); }
+    else { const v = Math.max(-1, Math.min(1, player.vy / 900)); sy = 1 + 0.10 * Math.abs(v); sx = 1 - 0.07 * Math.abs(v); }
+
+    const moving = player.onGround && Math.abs(player.vx) > 60;
+    const step = moving ? Math.sin(player.runCycle) : 0; // feet alternate only while walking
 
     ctx.save();
     ctx.translate(cx, cy + R * (1 - sy)); ctx.scale(sx, sy);
 
-    // little feet (gentle run cycle; level when standing)
-    const ft = player.feet * 4;
-    ctx.fillStyle = "#c01030";
-    ctx.beginPath(); ctx.ellipse(-R * 0.42, R * 0.92 - ft, 5, 4, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(R * 0.42, R * 0.92 + ft, 5, 4, 0, 0, 7); ctx.fill();
+    // ---- tiny legs + Humpty-Dumpty shoes ----
+    const fy = R * 0.98;
+    ctx.strokeStyle = "#7a0c1c"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-R * 0.42, R * 0.5); ctx.lineTo(-R * 0.42, fy - 3 - step * 3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(R * 0.42, R * 0.5); ctx.lineTo(R * 0.42, fy - 3 + step * 3); ctx.stroke();
+    ctx.fillStyle = "#1c0a0e";
+    ctx.beginPath(); ctx.ellipse(-R * 0.42 - 1, fy - step * 3, 6, 3.4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R * 0.42 + 1, fy + step * 3, 6, 3.4, 0, 0, 7); ctx.fill();
 
-    // balloon body (cached gradient — local space is constant)
+    // ---- round body ----
     ctx.fillStyle = GRAD.balloon; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
-    // knot
-    ctx.fillStyle = "#c01030"; ctx.beginPath(); ctx.moveTo(-3, R - 1); ctx.lineTo(3, R - 1); ctx.lineTo(0, R + 4); ctx.closePath(); ctx.fill();
-    // shine
-    ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.4, R * 0.18, R * 0.26, -0.5, 0, 7); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.ellipse(-R * 0.38, -R * 0.42, R * 0.16, R * 0.24, -0.5, 0, 7); ctx.fill();
 
-    // eyes (glide toward movement; widen a little with fear)
-    const lx = player.look * 1.8, eyeR = 5 + fear * 1.2;
+    // ---- angry face ----
+    const ex = 5.5;
+    // angry eyebrows (slanting down toward the nose)
+    ctx.strokeStyle = "#160018"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-ex - 4, -8.5); ctx.lineTo(-ex + 3, -5.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex + 4, -8.5); ctx.lineTo(ex - 3, -5.5); ctx.stroke();
+    // narrowed eyes
     ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(-6 + lx * 0.25, -2, eyeR, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 + lx * 0.25, -2, eyeR, 0, 7); ctx.fill();
-    ctx.fillStyle = "#160018";
-    ctx.beginPath(); ctx.arc(-6 + lx * 0.55, -2 + fear * 0.8, 2.4, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 + lx * 0.55, -2 + fear * 0.8, 2.4, 0, 7); ctx.fill();
-    // mouth: smile normally, "o" of fear when a hazard is near
-    ctx.strokeStyle = "#160018"; ctx.lineWidth = 1.6; ctx.beginPath();
-    if (fear > 0.45) { ctx.arc(0, 7, 2.2, 0, 7); }
-    else { ctx.arc(0, 4, 4, 0.15 * Math.PI, 0.85 * Math.PI); }
-    ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-ex, -2.5, 4, 3.2, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(ex, -2.5, 4, 3.2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#160018"; // pupils glare slightly toward the way it's facing
+    ctx.beginPath(); ctx.arc(-ex + dir * 1.4, -1.6, 2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + dir * 1.4, -1.6, 2, 0, 7); ctx.fill();
+    // a little frown
+    ctx.strokeStyle = "#160018"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 12, 4, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+    // ---- handlebar moustache ----
+    ctx.lineWidth = 3.2; ctx.strokeStyle = "#160018"; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(-6, 4.5, -9.5, 8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(6, 4.5, 9.5, 8); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 6, 1.6, 0, 7); ctx.fillStyle = "#160018"; ctx.fill(); // moustache center knot
+
     ctx.restore();
   }
 

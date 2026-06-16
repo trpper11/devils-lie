@@ -12,6 +12,9 @@ window.LB = (function () {
   "use strict";
   const BLOB = "019ecf14-8391-750a-9021-96eb26ec64c0";
   const URL = "https://jsonblob.com/api/jsonBlob/" + BLOB;
+  // Global board is LOCAL-ONLY during development (jsonblob dropped CORS support).
+  // Flip REMOTE_ON to true and point URL at a CORS-enabled backend to go global.
+  const REMOTE_ON = false;
   const LS_SCORES = "devilslie.local.scores";
   const LS_GEO = "devilslie.geo";
   const LS_NAME = "devilslie.name";
@@ -68,6 +71,7 @@ window.LB = (function () {
   }
 
   async function fetchRemote() {
+    if (!REMOTE_ON) return null;                    // local-only during dev
     try {
       const r = await fetch(URL, { cache: "no-store" });
       if (!r.ok) throw new Error("bad status");
@@ -93,12 +97,15 @@ window.LB = (function () {
     if (!me) return false;
     lastFlush = Date.now();
     saveLocal();
+    if (!REMOTE_ON) return false;                    // local-only during dev (no network noise)
     try {
       const remote = await fetchRemote();
       if (remote === null) return false;            // offline — local copy already saved
       const merged = dedupe(remote.concat([me]));
       const top = sortScores(merged).slice(0, 200);
-      const r = await fetch(URL, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scores: top }) });
+      // IMPORTANT: text/plain is a CORS-"simple" content type → no preflight OPTIONS.
+      // jsonblob 404s on OPTIONS, which silently blocked every write (the "saved locally" bug).
+      const r = await fetch(URL, { method: "PUT", headers: { "Content-Type": "text/plain;charset=UTF-8" }, body: JSON.stringify({ scores: top }) });
       return r.ok;
     } catch (e) { return false; }
   }

@@ -1,5 +1,22 @@
 # Devil's Lie — Requests Tracker
 
+## Round 8 (2026-06-16) — "fix 'saved locally', stop twitch, early basement, clean board" — ✅ DONE
+
+1. [x] **"Saved locally" diagnosed + addressed** — root cause: **jsonblob.com dropped CORS support** (returns no `Access-Control-Allow-Origin`, and 404s the preflight `OPTIONS`), so *every* browser write was silently blocked → it always fell back to local. Since a no-account CORS backend isn't reachable right now (kvdb.io needs a verified email), the board is now **clean & reliable local-only during development** (`REMOTE_ON=false`, no dead network requests, no scary message — win screen says "✓ Score saved"). Resets cleanly; wire `REMOTE_ON=true` + a CORS backend at finalization to go global.
+2. [x] **Character no longer twitches** — replaced the balloon face with a **grumpy little fellow**: angry slanted eyebrows, narrowed glaring eyes, a **handlebar moustache**, a frown, and tiny Humpty-Dumpty shoes on little legs. Deliberately STILL — the only motion is a subtle landing squash + a walk cycle that runs *only while moving*. No idle animation → nothing to twitch.
+3. [x] **Early basement taste** — added **Trapdoor (L5)**, a multi-story level in the first 10: the obvious surface door is a decoy, the floor has a trapdoor you fall through into a basement with the real exit. (Now 3 multi-story levels: L5, L24, L48.)
+4. [x] **Leaderboard cleaned** — reset the shared data to empty; local board is clean.
+
+### Verification — ✅ all passed
+- [x] CORS bug confirmed by inspecting jsonblob's missing headers + browser console; new local path tested (0 remote requests, score saved, no errors).
+- [x] New character rendered + confirmed (angry brows, moustache, shoes; no jitter).
+- [x] Trapdoor (L5) proven solvable; all 50 still solvable; zero JS errors swept across all 50 levels.
+
+### Open / deferred (per the PS)
+- **GitHub move**: the `trpper11/devils-lie` repo is small (≈0.5 MB, <10 commits) — NOT over-populated — so kept where it is (moving would change the live URL + need Pages re-setup). Will move to a backup account only if you want a fresh start.
+- **Global leaderboard backend**: deferred to "final development" (your PS#3) — needs a CORS-enabled store with a verifiable account (Firebase/Supabase/kvdb). Say the word and I'll wire one.
+- **External game-asset packs**: held off on a full sprite overhaul (it'd fight the cohesive procedural look + the no-assets/no-build design, and per your PS#2 — prototype one first). Happy to mock a sprite-pack art style (e.g., CC0 Kenney) on ONE level for you to approve before rolling out.
+
 ## Round 7 (2026-06-16) — "real lava, falling shards, chained crushers, all-players board, multi-story" — ✅ ALL DONE
 
 1. [x] **Real burning lava** — rewrote `drawLava`: flowing glowing surface wave, drifting dark cooled-crust patches, bubbles that swell & pop, and flame tongues licking up off the surface. No longer a flat gimmick.

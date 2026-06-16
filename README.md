@@ -8,11 +8,12 @@ Rage, then laugh.
 
 **[▶ Play it](https://trpper11.github.io/devils-lie/)** &nbsp;•&nbsp; 50 levels &nbsp;•&nbsp; 10 themed worlds &nbsp;•&nbsp; 14 kinds of lie &nbsp;•&nbsp; global leaderboard 🏆
 
-Play as a living red **balloon** — eyes, little feet, squash & stretch, and it
-bursts into shreds (or embers, in lava) when a trap pops it. Works on desktop
+Play as a **grumpy little red fellow** — angry brows, a handlebar moustache and
+tiny shoes — who bursts into shreds (or embers, in lava) when a trap gets him. Works on desktop
 (full-screen) and phones (landscape + translucent touch controls). Your name +
-country flag go on a global leaderboard the moment you start — finishers rank
+country flag go on the leaderboard the moment you start — finishers rank
 first (fewest deaths, then time), everyone else by how far they got.
+*(The board is local during development; a global backend gets wired at launch.)*
 
 ## Controls
 - **← → / A D** — move
