@@ -20,6 +20,15 @@
   const PW = 26, PH = 28;   // solid-collision box (floors/walls/gaps) — unchanged so platforming stays tuned
   const HBX = 3, HBY = 3;   // hazard box inset — spikes/lava/traps test this tighter box (matches the round balloon)
 
+  // ---- Power-ups (pick ONE at the start; each boon costs a sacrifice) ----
+  const POWERS = {
+    none:    { dbljump: false, moveMul: 1,    jumpMul: 1,    trueSight: false },
+    dbljump: { dbljump: true,  moveMul: 1,    jumpMul: 0.90, trueSight: false }, // +double jump, −jump height
+    speed:   { dbljump: false, moveMul: 1.25, jumpMul: 0.90, trueSight: false }, // +speed, −jump height
+    sight:   { dbljump: false, moveMul: 1,    jumpMul: 0.90, trueSight: true  }, // +see the lies, −jump height
+  };
+  let pwr = POWERS.none, pwrId = "none";
+
   // =====================================================================
   // THEMES — the scenery shifts every 4 levels (and varies per level)
   // =====================================================================
@@ -66,11 +75,12 @@
     const cssH = Math.max(1, Math.floor(H * scale));
     frame.style.width = cssW + "px";
     frame.style.height = cssH + "px";
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1); // sharper on hi-DPI / 4K
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
     renderScale = canvas.width / W;
     checkOrientation();
+    if (grid) buildStaticLayer(); // re-bake the background crisp at the new resolution
   }
   window.addEventListener("resize", resize);
   window.addEventListener("orientationchange", () => setTimeout(resize, 200));
@@ -83,7 +93,7 @@
   let levelIndex = 0, deaths = 0, runStart = 0, runElapsed = 0;
   let player, traps, grid, texts, collapsed, textShown, activeText, activeTextT;
   let levelTime = 0, animTime = 0, particles = [], shake = 0, hitStop = 0;
-  let staticLayer = null, embers = [], GRAD = null, animDt = 1 / 60, camY = 0;
+  let staticLayer = null, staticSR = 1, embers = [], GRAD = null, animDt = 1 / 60, camY = 0;
   let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
@@ -98,8 +108,8 @@
     lastJumpTap = animTime;
     if (player.onGround || player.coyote > 0) {
       player.jumpBuf = JUMP_BUF;            // ground jump (buffered with coyote-time)
-    } else if (!player.dblUsed) {
-      player.vy = -DBL_JUMP;                // mid-air DOUBLE JUMP — press jump again in the air (once)
+    } else if (pwr.dbljump && !player.dblUsed) {
+      player.vy = -DBL_JUMP * pwr.jumpMul;  // mid-air DOUBLE JUMP — only with the Double Jump power
       player.dblUsed = true;
       sndJump(true);
     }
@@ -489,13 +499,14 @@
     if (reverseRange) { const pcx = player.x + PW / 2; reverseActive = pcx >= reverseRange[0] && pcx < reverseRange[1]; if (reverseActive) want = -want; }
     if (want !== 0) player.facing = want;
     const a = player.onGround ? ACCEL : AIR_ACCEL;
-    if (want !== 0) { player.vx += want * a * dt; player.vx = Math.max(-MOVE, Math.min(MOVE, player.vx)); }
+    const moveCap = MOVE * pwr.moveMul;
+    if (want !== 0) { player.vx += want * a * dt; player.vx = Math.max(-moveCap, Math.min(moveCap, player.vx)); }
     else { const f = FRICTION * dt; if (player.vx > f) player.vx -= f; else if (player.vx < -f) player.vx += f; else player.vx = 0; }
 
     if (player.jumpBuf > 0) player.jumpBuf -= dt;
     if (player.onGround) player.coyote = COYOTE; else player.coyote -= dt;
     if (player.jumpBuf > 0 && player.coyote > 0) {
-      const big = pendingBig; player.vy = -(big ? BIG_JUMP : JUMP);
+      const big = pendingBig; player.vy = -(big ? BIG_JUMP : JUMP) * pwr.jumpMul;
       player.onGround = false; player.coyote = 0; player.jumpBuf = 0; pendingBig = false;
       sndJump(big);
     }
@@ -570,9 +581,11 @@
   // =====================================================================
   function buildStaticLayer() {
     const T = curTheme, levelH = LROWS * TILE;
+    staticSR = Math.max(1, Math.min(4, renderScale)); // bake the background at display resolution (crisp on 4K)
     staticLayer = document.createElement("canvas");
-    staticLayer.width = W; staticLayer.height = levelH;
+    staticLayer.width = Math.ceil(W * staticSR); staticLayer.height = Math.ceil(levelH * staticSR);
     const g = staticLayer.getContext("2d");
+    g.scale(staticSR, staticSR);                    // draw in logical coords, store at hi-res
     // sky over the first screen…
     const sky = g.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.55, T.sky[1]); sky.addColorStop(1, T.sky[2]);
@@ -654,6 +667,27 @@
   // =====================================================================
   // Render
   // =====================================================================
+  // TRUE SIGHT — mark the lies: green ✓ = safe (but looks scary), red ✗ = deadly (but looks safe)
+  function truthBadge(x, y, ok) {
+    ctx.save(); ctx.globalAlpha = 0.92;
+    ctx.fillStyle = ok ? "#2cb45a" : "#dc3340"; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.beginPath();
+    if (ok) { ctx.moveTo(x - 3.2, y + 0.3); ctx.lineTo(x - 0.6, y + 3); ctx.lineTo(x + 3.6, y - 3.2); }
+    else { ctx.moveTo(x - 3, y - 3); ctx.lineTo(x + 3, y + 3); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x - 3, y + 3); }
+    ctx.stroke(); ctx.restore();
+  }
+  function drawTruthBadges() {
+    for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
+      const ch = grid[r][c], x = c * TILE + TILE / 2;
+      if (ch === "F" && !collapsed.has(c + "," + r)) truthBadge(x, r * TILE + 9, false); // fake floor — drops you
+      else if (ch === "M") truthBadge(x, r * TILE + 8, false);   // fake door
+      else if (ch === "L") truthBadge(x, r * TILE + 4, false);   // real lava — deadly
+      else if (ch === "G") truthBadge(x, r * TILE + 4, true);    // fake lava — safe
+      else if (ch === "B") truthBadge(x, r * TILE + 6, true);    // decoy — harmless
+      else if (ch === "H") truthBadge(x, r * TILE + 30, true);   // phantom gap — solid/safe
+    }
+    if (exit) truthBadge(exit.c * TILE + TILE / 2, exit.r * TILE + 8, true); // the REAL exit
+  }
   function render() {
     // Interpolate the player between the last two physics ticks for silky motion
     // (decouples the 120 Hz sim from the display refresh — no stutter on any screen).
@@ -673,8 +707,8 @@
     let ox = 0, oy = 0;
     if (shake > 0) { ox = (Math.random() - .5) * shake; oy = (Math.random() - .5) * shake; ctx.translate(ox, oy); }
 
-    // background — draw the visible vertical slice of the (possibly tall) static layer
-    if (staticLayer) ctx.drawImage(staticLayer, 0, camY, W, H, 0, 0, W, H);
+    // background — hi-res slice of the (possibly tall) static layer, drawn 1:1 (crisp)
+    if (staticLayer) ctx.drawImage(staticLayer, 0, camY * staticSR, W * staticSR, H * staticSR, 0, 0, W, H);
     else { ctx.fillStyle = "#0d0d16"; ctx.fillRect(0, 0, W, H); }
 
     // embers (screen-space ambient)
@@ -709,6 +743,8 @@
       else if (t.type === "guillotine") { if (sawWorld) drawSaw(tx, ty, sawExtend(t)); else drawShard(tx, ty, shardState(t)); }
       else if (t.type === "crusher") drawCrusher(tx, ty + crusherTravel(t) * crusherDown(t), (t.w || 1) * TILE, ty);
     }
+
+    if (pwr.trueSight) drawTruthBadges();
 
     if (!player.dead && state === "play") drawPlayer();
 
@@ -1055,17 +1091,23 @@
     nameInput.classList.remove("shake"); void nameInput.offsetWidth; nameInput.classList.add("shake");
     geoLine.dataset.hint = "1"; geoLine.textContent = "👆 Enter a name to play";
   }
+  // PLAY → pick a power → begin the run
   function startGame() {
     if (!nameValid()) { rejectNoName(); return; }
     audio();
-    const n = nameInput.value.trim().toUpperCase().slice(0, 14);
-    playerName = n; LB.setName(n);
-    deaths = 0; elDeaths.textContent = "DEATHS 0";
-    runStart = performance.now();
-    LB.startRun({ name: n, cc: playerGeo.cc, country: playerGeo.country }); // everyone goes on the board
-    if (QA_LEVEL > 0) LB.progress(QA_LEVEL + 1, 0);
+    playerName = nameInput.value.trim().toUpperCase().slice(0, 14); LB.setName(playerName);
     titleScreen.classList.add("hidden"); winScreen.classList.add("hidden"); lbScreen.classList.add("hidden");
     document.getElementById("settings-screen").classList.add("hidden");
+    document.getElementById("power-screen").classList.remove("hidden");
+    state = "power";
+  }
+  function beginRun() {
+    pwr = POWERS[pwrId] || POWERS.none;
+    document.getElementById("power-screen").classList.add("hidden");
+    deaths = 0; elDeaths.textContent = "DEATHS 0";
+    runStart = performance.now();
+    LB.startRun({ name: playerName, cc: playerGeo.cc, country: playerGeo.country }); // everyone goes on the board
+    if (QA_LEVEL > 0) LB.progress(QA_LEVEL + 1, 0);
     document.getElementById("stage-screen").classList.add("hidden");
     keys.left = keys.right = keys.jump = false;
     state = "play";
@@ -1075,6 +1117,8 @@
   }
   startBtn.addEventListener("click", startGame);
   document.getElementById("again-btn").addEventListener("click", startGame);
+  document.querySelectorAll("#power-screen .pcard").forEach(c => c.addEventListener("click", () => { pwrId = c.dataset.pwr; beginRun(); }));
+  document.getElementById("power-skip").addEventListener("click", () => { pwrId = "none"; beginRun(); });
 
   // ----- Stage interstitials (act breaks) -----
   const STAGES = {
@@ -1144,8 +1188,54 @@
     updateParticles(dt);
     render();
     updateTouchVisibility();
+    if (state === "power") drawPowerIcons(now / 1000);
     if (state === "play") elTime.textContent = ((performance.now() - runStart) / 1000).toFixed(1) + "s";
     requestAnimationFrame(frameLoop);
+  }
+
+  // animated premium icons inside the power cards
+  const _picons = {};
+  function powerIconCtx(id) { if (!(id in _picons)) { const cv = document.querySelector('#power-screen .picon[data-icon="' + id + '"]'); _picons[id] = cv ? cv.getContext("2d") : null; } return _picons[id]; }
+  function miniGuy(g, cx, cy, r) {
+    const grad = g.createRadialGradient(cx - r * 0.3, cy - r * 0.4, 1, cx, cy, r * 1.2);
+    grad.addColorStop(0, "#ff8aa0"); grad.addColorStop(0.5, "#ff3b54"); grad.addColorStop(1, "#c01030");
+    g.fillStyle = grad; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+    g.strokeStyle = "#160018"; g.lineWidth = r * 0.16; g.lineCap = "round";
+    g.beginPath(); g.moveTo(cx - r * 0.6, cy - r * 0.5); g.lineTo(cx - r * 0.1, cy - r * 0.25); g.stroke();
+    g.beginPath(); g.moveTo(cx + r * 0.6, cy - r * 0.5); g.lineTo(cx + r * 0.1, cy - r * 0.25); g.stroke();
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(cx - r * 0.3, cy, r * 0.17, 0, 7); g.fill(); g.beginPath(); g.arc(cx + r * 0.3, cy, r * 0.17, 0, 7); g.fill();
+    g.fillStyle = "#160018"; g.beginPath(); g.arc(cx - r * 0.3, cy, r * 0.09, 0, 7); g.fill(); g.beginPath(); g.arc(cx + r * 0.3, cy, r * 0.09, 0, 7); g.fill();
+  }
+  function drawPowerIcons(t) {
+    const S = 120;
+    let g = powerIconCtx("dbljump");
+    if (g) { g.clearRect(0, 0, S, S);
+      const ph = (t % 1.7) / 1.7; let y = ph < 0.5 ? 92 - Math.sin((ph / 0.5) * Math.PI) * 28 : 64 - Math.sin(((ph - 0.5) / 0.5) * Math.PI) * 34;
+      g.fillStyle = "rgba(255,255,255,0.08)"; g.fillRect(24, 96, 72, 3);
+      g.strokeStyle = "rgba(127,224,160," + (0.35 + 0.4 * Math.sin(t * 6)) + ")"; g.lineWidth = 4; g.lineCap = "round";
+      g.beginPath(); g.moveTo(52, 26); g.lineTo(60, 18); g.lineTo(68, 26); g.stroke();
+      g.beginPath(); g.moveTo(52, 40); g.lineTo(60, 32); g.lineTo(68, 40); g.stroke();
+      miniGuy(g, 60, y, 16);
+    }
+    g = powerIconCtx("speed");
+    if (g) { g.clearRect(0, 0, S, S);
+      g.lineCap = "round"; g.strokeStyle = "rgba(255,207,92,0.8)"; g.lineWidth = 4;
+      for (let i = 0; i < 4; i++) { const len = 22 + ((t * 320 + i * 40) % 50); g.globalAlpha = 0.7 - i * 0.14; g.beginPath(); g.moveTo(8, 38 + i * 15); g.lineTo(8 + len, 38 + i * 15); g.stroke(); }
+      g.globalAlpha = 1;
+      miniGuy(g, 76 + Math.sin(t * 16) * 1.5, 60, 17);
+      g.fillStyle = "#ffd24a"; g.beginPath(); g.moveTo(98, 26); g.lineTo(89, 54); g.lineTo(98, 54); g.lineTo(91, 80); g.lineTo(108, 46); g.lineTo(99, 46); g.closePath(); g.fill();
+    }
+    g = powerIconCtx("sight");
+    if (g) { g.clearRect(0, 0, S, S);
+      const blink = (t % 2.6) > 2.45, look = Math.sin(t * 1.6) * 9;
+      g.fillStyle = "#0c1320"; g.beginPath(); g.ellipse(60, 60, 44, blink ? 3 : 27, 0, 0, 7); g.fill();
+      if (!blink) {
+        g.fillStyle = "#bfe7ff"; g.beginPath(); g.arc(60 + look, 60, 17, 0, 7); g.fill();
+        g.fillStyle = "#16324a"; g.beginPath(); g.arc(60 + look, 60, 8.5, 0, 7); g.fill();
+        g.fillStyle = "#fff"; g.beginPath(); g.arc(64 + look, 55, 3, 0, 7); g.fill();
+      }
+      g.strokeStyle = "#ffcf5c"; g.lineWidth = 3; g.beginPath(); g.ellipse(60, 60, 44, 27, 0, 0, 7); g.stroke();
+    }
   }
 
   // Debug hook (localhost only) — lets the headless verifier read state & drive input.

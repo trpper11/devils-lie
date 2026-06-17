@@ -101,6 +101,36 @@
       <button class="btn" id="set-back">DONE</button>
     </div>
 
+    <!-- Power pick (start of a run): one boon, one sacrifice -->
+    <div class="overlay hidden" id="power-screen">
+      <h2 class="power-kicker">CHOOSE YOUR CURSE</h2>
+      <p class="power-sub">One power. One sacrifice. 😈</p>
+      <div class="power-cards">
+        <button class="pcard" data-pwr="dbljump">
+          <canvas class="picon" width="120" height="120" data-icon="dbljump"></canvas>
+          <div class="pname">DOUBLE JUMP</div>
+          <div class="pboon">＋ jump again in mid-air</div>
+          <div class="pcost">－ lower jump height</div>
+        </button>
+        <button class="pcard" data-pwr="speed">
+          <canvas class="picon" width="120" height="120" data-icon="speed"></canvas>
+          <div class="pname">SWIFT</div>
+          <div class="pboon">＋ 25% move speed</div>
+          <div class="pcost">－ lower jump height</div>
+        </button>
+        <button class="pcard" data-pwr="sight">
+          <canvas class="picon" width="120" height="120" data-icon="sight"></canvas>
+          <div class="pname">TRUE SIGHT</div>
+          <div class="pboon">＋ see what's real vs a lie</div>
+          <div class="pcost">－ lower jump height</div>
+        </button>
+      </div>
+      <div class="parchment">
+        <b>⚖ Sacrifice for power</b> — every gift weakens something. The Devil always takes his due.
+      </div>
+      <button class="btn ghost" id="power-skip">play with no power →</button>
+    </div>
+
     <!-- Stage interstitial (between acts) -->
     <div class="overlay hidden" id="stage-screen">
       <h2 class="stage-kicker" id="stage-kicker">STAGE 2</h2>
