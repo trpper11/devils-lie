@@ -861,38 +861,40 @@
   // ice breaking off a cave roof. Always ice (regardless of world), bigger than before.
   function drawShard(tx, ty, s) {
     const cxm = tx + TILE / 2, floorTop = (LROWS - 1) * TILE;
-    // frosty mount where it cracks from
-    ctx.fillStyle = "rgba(190,225,245,0.5)"; ctx.fillRect(tx + 4, ty, TILE - 8, 5);
-    // floor impact target (telegraph)
+    // floor impact target (telegraph — glowing cyan ring where it will land)
     if (s.phase !== "gone") {
       const inten = s.phase === "warn" ? s.k * 0.6 : 1;
-      ctx.save(); ctx.globalAlpha = 0.32 * inten; ctx.fillStyle = "#9fd8f2";
+      ctx.save(); ctx.globalAlpha = 0.32 * inten; ctx.fillStyle = "#37e6ff";
       ctx.beginPath(); ctx.ellipse(cxm, floorTop + TILE - 3, 13, 3.2, 0, 0, 7); ctx.fill(); ctx.restore();
     }
-    if (s.phase === "gone") { // cracked stub left on the ceiling
-      ctx.fillStyle = "#cfeaf7"; ctx.beginPath(); ctx.moveTo(cxm - 6, ty + 4); ctx.lineTo(cxm + 6, ty + 4); ctx.lineTo(cxm, ty + 12); ctx.closePath(); ctx.fill();
-      return;
-    }
+    if (s.phase === "gone") return;               // shattered — nothing hanging
     let topY = s.y;
-    if (s.phase === "warn") topY = ty + Math.sin(animTime * 40) * 1.4 * s.k; // shivers, about to crack
-    else { ctx.globalAlpha = 0.28; ctx.strokeStyle = "#dff2ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cxm, topY - 16); ctx.lineTo(cxm, topY); ctx.stroke(); ctx.globalAlpha = 1; } // fall streak
-    drawIceChunk(cxm, topY);
+    if (s.phase === "warn") topY = ty + Math.sin(animTime * 40) * 1.2 * s.k; // forms & shivers at the ceiling
+    drawIceCrystal(cxm, topY);                     // no tail
   }
-  function drawIceChunk(cxm, topY) {
-    const w = 15, h = TILE + 4, tipY = topY + h;            // big & chunky
-    const g = ctx.createLinearGradient(cxm, topY, cxm, tipY);
-    g.addColorStop(0, "#f2fbff"); g.addColorStop(0.45, "#b6e4f7"); g.addColorStop(1, "#7fc7e8");
-    ctx.globalAlpha = 0.95; ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(cxm - w, topY + 2); ctx.lineTo(cxm + w, topY + 2);
-    ctx.lineTo(cxm + w * 0.5, topY + h * 0.45); ctx.lineTo(cxm + w * 0.65, topY + h * 0.6);
-    ctx.lineTo(cxm, tipY); ctx.lineTo(cxm - w * 0.55, topY + h * 0.62); ctx.lineTo(cxm - w * 0.45, topY + h * 0.44);
-    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-    // bright facets / highlights
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    ctx.beginPath(); ctx.moveTo(cxm - 3, topY + 5); ctx.lineTo(cxm + 1, topY + 5); ctx.lineTo(cxm - 1, tipY - 6); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cxm + 5, topY + 6); ctx.lineTo(cxm + 2, topY + h * 0.5); ctx.stroke();
+  // A glowing, faceted, double-pointed ice crystal (matches the concept ref).
+  function drawIceCrystal(cxm, topY) {
+    const w = 10, h = TILE + 6;
+    const P = [[0, 0], [-w * 0.5, h * 0.2], [-w, h * 0.42], [-w * 0.66, h * 0.66], [-w * 0.3, h * 0.86],
+      [0, h], [w * 0.3, h * 0.86], [w * 0.66, h * 0.66], [w, h * 0.42], [w * 0.5, h * 0.2]];
+    ctx.save(); ctx.translate(cxm, topY);
+    ctx.shadowColor = "#3ce8ff"; ctx.shadowBlur = 14;        // soft outer glow
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "#bfeaf3"); g.addColorStop(0.5, "#1fa9c9"); g.addColorStop(1, "#0a4f63");
+    ctx.fillStyle = g; ctx.beginPath();
+    P.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#c8fbff"; ctx.lineWidth = 1.5; ctx.stroke(); // bright glowing edge
+    // internal facet lines
+    ctx.strokeStyle = "rgba(190,250,255,0.75)"; ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(0, h * 0.08); ctx.lineTo(0, h * 0.92);
+    ctx.moveTo(-w * 0.5, h * 0.2); ctx.lineTo(0, h * 0.46); ctx.moveTo(w * 0.5, h * 0.2); ctx.lineTo(0, h * 0.46);
+    ctx.moveTo(-w, h * 0.42); ctx.lineTo(0, h * 0.62); ctx.moveTo(w, h * 0.42); ctx.lineTo(0, h * 0.62);
+    ctx.stroke();
+    // bright highlight sliver
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.beginPath(); ctx.moveTo(-1.6, h * 0.14); ctx.lineTo(0.4, h * 0.14); ctx.lineTo(-0.6, h * 0.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
   // Spinning sawblade lowered on a chain (the saw-world hazard).
   function drawSaw(tx, ty, f) {
