@@ -75,13 +75,14 @@
     const cssH = Math.max(1, Math.floor(H * scale));
     frame.style.width = cssW + "px";
     frame.style.height = cssH + "px";
-    const dpr = Math.min(2.5, window.devicePixelRatio || 1); // sharper on hi-DPI / 4K
+    const dpr = Math.min(3, window.devicePixelRatio || 1); // sharper on hi-DPI / 4K
     canvas.width = Math.floor(cssW * dpr);
     canvas.height = Math.floor(cssH * dpr);
     renderScale = canvas.width / W;
     checkOrientation();
-    if (grid) buildStaticLayer(); // re-bake the background crisp at the new resolution
+    if (grid) { if (_staticTimer) clearTimeout(_staticTimer); _staticTimer = setTimeout(() => { _staticTimer = null; if (grid) buildStaticLayer(); }, 120); } // debounced re-bake (crisp, no drag jank)
   }
+  let _staticTimer = null;
   window.addEventListener("resize", resize);
   window.addEventListener("orientationchange", () => setTimeout(resize, 200));
 
@@ -95,6 +96,7 @@
   let levelTime = 0, animTime = 0, particles = [], shake = 0, hitStop = 0;
   let staticLayer = null, staticSR = 1, embers = [], GRAD = null, animDt = 1 / 60, camY = 0;
   let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
+  let doorCells = [], fakeDoors = new Set(); // all door cells, and which ones kill (the real exit is randomized)
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
 
@@ -276,19 +278,27 @@
     reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
     exit = exitAlt = null; exitTeleported = false;
-    let start = { c: 1, r: LROWS - 2 };
+    let start = { c: 1, r: LROWS - 2 }, eCell = null, mCells = [];
     for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c];
       if (ch === "S") start = { c, r };
-      else if (ch === "E") exit = { c, r };
+      else if (ch === "E") eCell = { c, r };
+      else if (ch === "M") mCells.push({ c, r });
       else if (ch === "@") exitAlt = { c, r };
       else if (ch === "P") traps.push({ type: "popup", c, r, up: 0, triggered: false });
       else if (ch === "D") traps.push({ type: "guillotine", c, r, period: (sawWorld ? 2.0 : 2.6) / spd, down: 0.85, off: c * 0.27 });
       else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6 / spd, down: 1.0, off: 0 });
     }
     traps = mergeCrushers(traps);
-    exitHome = exit ? { c: exit.c, r: exit.r } : { c: COLS - 2, r: LROWS - 2 };
-    if (!exit) exit = { ...exitHome };
+    // RANDOMIZE which gate is the real exit (so the 2nd door isn't always right).
+    doorCells = (eCell ? [eCell] : []).concat(mCells);
+    if (exitAlt) { exit = eCell ? { ...eCell } : null; }            // runaway levels keep their special logic
+    else if (doorCells.length) { exit = { ...doorCells[Math.floor(Math.random() * doorCells.length)] }; }
+    if (!exit) exit = { c: COLS - 2, r: LROWS - 2 };
+    exitHome = { c: exit.c, r: exit.r };
+    // every OTHER door is a deadly fake
+    fakeDoors = new Set(doorCells.filter(d => !(d.c === exit.c && d.r === exit.r)).map(d => d.c + "," + d.r));
+    if (exitAlt) for (const d of mCells) fakeDoors.add(d.c + "," + d.r); // runaway: all M are fakes
     player = player || {};
     player.startX = start.c * TILE + (TILE - PW) / 2;
     player.startY = start.r * TILE + (TILE - PH);
@@ -474,7 +484,8 @@
       const ch = grid[r][c];
       // spikes are deadly right up to their tips now — touch a needle, pop instantly
       if (ch === "^" && overlap(hx, hy, hw, hh, c * TILE + 2, r * TILE + 8, TILE - 4, TILE - 8)) return "pop";
-      if (ch === "M" && overlap(hx, hy, hw, hh, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
+      // a FAKE door (randomized) blasts you — the real exit is the other one
+      if (fakeDoors.has(c + "," + r) && overlap(hx, hy, hw, hh, c * TILE + 6, r * TILE + 4, TILE - 12, TILE - 4)) return "die";
       // real lava: surface is deadly (top ~60% of the tile so the floor edge stays fair)
       if (ch === "L" && overlap(hx, hy, hw, hh, c * TILE, r * TILE + 8, TILE, TILE - 8)) return "burn";
     }
@@ -680,13 +691,14 @@
     for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c], x = c * TILE + TILE / 2;
       if (ch === "F" && !collapsed.has(c + "," + r)) truthBadge(x, r * TILE + 9, false); // fake floor — drops you
-      else if (ch === "M") truthBadge(x, r * TILE + 8, false);   // fake door
       else if (ch === "L") truthBadge(x, r * TILE + 4, false);   // real lava — deadly
       else if (ch === "G") truthBadge(x, r * TILE + 4, true);    // fake lava — safe
       else if (ch === "B") truthBadge(x, r * TILE + 6, true);    // decoy — harmless
       else if (ch === "H") truthBadge(x, r * TILE + 30, true);   // phantom gap — solid/safe
     }
-    if (exit) truthBadge(exit.c * TILE + TILE / 2, exit.r * TILE + 8, true); // the REAL exit
+    // doors: green ✓ on the real exit, red ✗ on the deadly fakes (reflects the randomized assignment)
+    for (const d of doorCells) truthBadge(d.c * TILE + TILE / 2, d.r * TILE + 8, !fakeDoors.has(d.c + "," + d.r));
+    if (exit && !doorCells.some(d => d.c === exit.c && d.r === exit.r)) truthBadge(exit.c * TILE + TILE / 2, exit.r * TILE + 8, true);
   }
   function render() {
     // Interpolate the player between the last two physics ticks for silky motion
@@ -732,10 +744,11 @@
       const ch = grid[r][c], x = c * TILE, y = r * TILE;
       if (ch === "F" && !collapsed.has(c + "," + r)) drawBlockTo(ctx, x, y);
       else if (ch === "O") drawFakePlatform(x, y);
-      else if (ch === "M") drawDoor(x, y, false);
       else if (ch === "L" || ch === "G") drawLava(x, y, r); // L deadly, G safe — drawn identically (the troll)
       else if (ch === "J") drawBouncePad(x, y);
     }
+    // every gate is drawn IDENTICALLY (real & fakes) — the real one is randomized, so you can't tell
+    for (const d of doorCells) drawDoor(d.c * TILE, d.r * TILE, false);
     if (exit) drawDoor(exit.c * TILE, exit.r * TILE, true); // the real (possibly runaway) door
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
