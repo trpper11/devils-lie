@@ -1266,6 +1266,6 @@
   refreshStartBtn();
   applySettings();
   loadLevel(0); state = "title";
-  LB.geo().then(g => { playerGeo = g; if (!geoLine.dataset.hint) geoLine.textContent = g.cc ? `${LB.flag(g.cc)} ${g.country}` : "Flag: unknown (offline)"; });
+  LB.geo().then(g => { playerGeo = g; if (!geoLine.dataset.hint) geoLine.textContent = g.cc ? `${LB.flag(g.cc)} ${g.country}` : "🏴‍☠️ flag of the unknown"; });
   requestAnimationFrame(frameLoop);
 })();

@@ -39,12 +39,16 @@ window.LB = (function () {
 
   async function geo() {
     const cached = lget(LS_GEO, null);
-    if (cached && cached.cc !== undefined) return cached;
+    if (cached && cached.cc) return cached;
     try {
-      const r = await fetch("https://ipwho.is/?fields=country,country_code", { cache: "no-store" });
+      // api.country.is — CORS-enabled, no key, reliable. Returns the country code.
+      const r = await fetch("https://api.country.is/", { cache: "no-store" });
       const j = await r.json();
-      const g = { country: j.country || "", cc: (j.country_code || "").toUpperCase() };
-      if (g.cc) lset(LS_GEO, g);
+      const cc = (j.country || "").toUpperCase();
+      let country = cc;
+      try { country = new Intl.DisplayNames(["en"], { type: "region" }).of(cc) || cc; } catch (e) {}
+      const g = { country, cc };
+      if (cc) lset(LS_GEO, g);
       return g;
     } catch (e) { return { country: "", cc: "" }; }
   }
