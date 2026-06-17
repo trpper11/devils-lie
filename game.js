@@ -28,6 +28,7 @@
     sight:   { dbljump: false, moveMul: 1,    jumpMul: 0.90, trueSight: true  }, // +see the lies, −jump height
   };
   let pwr = POWERS.none, pwrId = "none";
+  let baseGlow = true;   // neon under-glow on the character (toggle with L)
 
   // =====================================================================
   // THEMES — the scenery shifts every 4 levels (and varies per level)
@@ -97,6 +98,7 @@
   let staticLayer = null, staticSR = 1, embers = [], GRAD = null, animDt = 1 / 60, camY = 0;
   let exit = null, exitHome = null, exitAlt = null, exitTeleported = false, reverseRange = null, reverseActive = false;
   let doorCells = [], fakeDoors = new Set(); // all door cells, and which ones kill (the real exit is randomized)
+  let teleSrc = [], teleDst = [];            // teleport doors (T) and their landing points (t)
   let playerName = "", playerGeo = { country: "", cc: "" };
   let needsRotate = false;
 
@@ -129,6 +131,7 @@
     else if (k === "arrowright" || k === "d") { keys.right = true; e.preventDefault(); }
     else if (k === "arrowup" || k === "w" || k === " ") { if (state === "play" && !e.repeat) pressJump(); e.preventDefault(); }
     else if (k === "r") { if (state === "play") respawn(); }
+    else if (k === "l") { baseGlow = !baseGlow; settings.glow = baseGlow; saveSettings(); }
   });
   window.addEventListener("keyup", (e) => {
     const k = e.key.toLowerCase();
@@ -199,7 +202,7 @@
   // =====================================================================
   // Settings (persisted)
   // =====================================================================
-  const DEFAULT_SETTINGS = { controls: "auto", opacity: 0.4, music: true };
+  const DEFAULT_SETTINGS = { controls: "auto", opacity: 0.4, music: true, glow: true };
   let settings = (() => {
     try { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem("devilslie.settings")) || {}); }
     catch (e) { return Object.assign({}, DEFAULT_SETTINGS); }
@@ -210,6 +213,7 @@
   }
   function applySettings() {
     document.documentElement.style.setProperty("--tbtn-opacity", settings.opacity);
+    baseGlow = settings.glow !== false;
     updateTouchVisibility();
     const mb = document.getElementById("music-btn");
     if (mb) { mb.textContent = settings.music ? "🔊" : "🔇"; mb.classList.toggle("off", !settings.music); mb.title = settings.music ? "Music: on" : "Music: off"; }
@@ -277,17 +281,21 @@
     const spd = L.spd || 1;
     reverseRange = L.rev ? [L.rev[0] * TILE, (L.rev[1] + 1) * TILE] : null;
     traps = [];
-    exit = exitAlt = null; exitTeleported = false;
+    exit = exitAlt = null; exitTeleported = false; teleSrc = []; teleDst = [];
     let start = { c: 1, r: LROWS - 2 }, eCell = null, mCells = [];
     for (let r = 0; r < LROWS; r++) for (let c = 0; c < COLS; c++) {
       const ch = grid[r][c];
       if (ch === "S") start = { c, r };
       else if (ch === "E") eCell = { c, r };
       else if (ch === "M") mCells.push({ c, r });
+      else if (ch === "T") teleSrc.push({ c, r });       // teleport door (looks like a door)
+      else if (ch === "t") teleDst.push({ c, r });       // teleport landing point
       else if (ch === "@") exitAlt = { c, r };
       else if (ch === "P") traps.push({ type: "popup", c, r, up: 0, triggered: false });
-      else if (ch === "D") traps.push({ type: "guillotine", c, r, period: (sawWorld ? 2.0 : 2.6) / spd, down: 0.85, off: c * 0.27 });
-      else if (ch === "X") traps.push({ type: "crusher", c, r, period: 2.6 / spd, down: 1.0, off: 0 });
+      // timed traps get a RANDOM phase each run, so the rhythm can't be memorised (each is still
+      // individually passable — wait for its window — and there's safe ground between them).
+      else if (ch === "D") { const p = (sawWorld ? 2.0 : 2.6) / spd; traps.push({ type: "guillotine", c, r, period: p, down: 0.85, off: Math.random() * p }); }
+      else if (ch === "X") { const p = 2.6 / spd; traps.push({ type: "crusher", c, r, period: p, down: 1.0, off: Math.random() * p }); }
     }
     traps = mergeCrushers(traps);
     // RANDOMIZE which gate is the real exit (so the 2nd door isn't always right).
@@ -557,6 +565,24 @@
     if (hit === "pop") { die(true); return; }
     if (hit === "die") { die(false); return; }
     if (hit === "burn") { die(false, true); return; }
+    // teleport door: enter T → warp to a random landing point (even mid-air)
+    if (player.teleCool > 0) player.teleCool -= dt;
+    if (teleSrc.length && teleDst.length && player.teleCool <= 0) {
+      for (const s of teleSrc) {
+        if (overlap(player.x, player.y, PW, PH, s.c * TILE + 6, s.r * TILE + 4, TILE - 12, TILE - 4)) {
+          const d = teleDst[Math.floor(Math.random() * teleDst.length)];
+          const ex0 = player.x + PW / 2, ey0 = player.y + PH / 2;
+          player.x = d.c * TILE + (TILE - PW) / 2; player.y = d.r * TILE + (TILE - PH) / 2;
+          player.prevX = player.x; player.prevY = player.y; player.vy = 0; player.vx = 0; player.teleCool = 0.4;
+          sndBounce(); tone(520, 0.12, "sine", 0.06, 980);
+          const ex1 = player.x + PW / 2, ey1 = player.y + PH / 2;
+          for (let k = 0; k < 12; k++) { const a = Math.random() * 7, sp = 80 + Math.random() * 160;
+            particles.push({ x: ex0, y: ey0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4, r: 2.5, col: "#b388ff" });
+            particles.push({ x: ex1, y: ey1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4, r: 2.5, col: "#88e0ff" }); }
+          return;
+        }
+      }
+    }
     // runaway exit: get close and the REAL door bolts to its alt spot (once)
     if (exitAlt && !exitTeleported) {
       const ecx = exit.c * TILE + TILE / 2, ecy = exit.r * TILE + TILE / 2;
@@ -699,6 +725,13 @@
     // doors: green ✓ on the real exit, red ✗ on the deadly fakes (reflects the randomized assignment)
     for (const d of doorCells) truthBadge(d.c * TILE + TILE / 2, d.r * TILE + 8, !fakeDoors.has(d.c + "," + d.r));
     if (exit && !doorCells.some(d => d.c === exit.c && d.r === exit.r)) truthBadge(exit.c * TILE + TILE / 2, exit.r * TILE + 8, true);
+    // teleport doors get a purple ↻ badge (not exit, not death — it warps you)
+    for (const s of teleSrc) {
+      const x = s.c * TILE + TILE / 2, y = s.r * TILE + 8;
+      ctx.save(); ctx.globalAlpha = 0.92; ctx.fillStyle = "#9b6bff"; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y, 3.2, 0.4, 5.4); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x + 3, y - 1.6, 1.2, 0, 7); ctx.fill(); ctx.restore();
+    }
   }
   function render() {
     // Interpolate the player between the last two physics ticks for silky motion
@@ -747,8 +780,10 @@
       else if (ch === "L" || ch === "G") drawLava(x, y, r); // L deadly, G safe — drawn identically (the troll)
       else if (ch === "J") drawBouncePad(x, y);
     }
-    // every gate is drawn IDENTICALLY (real & fakes) — the real one is randomized, so you can't tell
+    // every gate is drawn IDENTICALLY (real, fakes AND teleport doors) — you can't tell them apart
     for (const d of doorCells) drawDoor(d.c * TILE, d.r * TILE, false);
+    for (const s of teleSrc) drawDoor(s.c * TILE, s.r * TILE, false);
+    for (const d of teleDst) drawPortal(d.c * TILE, d.r * TILE); // swirling landing portal
     if (exit) drawDoor(exit.c * TILE, exit.r * TILE, true); // the real (possibly runaway) door
     for (const t of traps) {
       const tx = t.c * TILE, ty = t.r * TILE;
@@ -954,6 +989,19 @@
     ctx.fillStyle = "#140e26"; ctx.fillRect(TILE / 2 + 4, TILE / 2, 4, 4);
     ctx.restore();
   }
+  // swirling teleport landing portal
+  function drawPortal(x, y) {
+    const cx = x + TILE / 2, cy = y + TILE / 2;
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.globalCompositeOperation = "lighter";
+    const g = ctx.createRadialGradient(0, 0, 1, 0, 0, TILE * 0.5);
+    g.addColorStop(0, "rgba(180,140,255,0.5)"); g.addColorStop(0.6, "rgba(120,200,255,0.22)"); g.addColorStop(1, "transparent");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, TILE * 0.42, TILE * 0.5, 0, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = "rgba(200,180,255,0.7)"; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) { const a = animTime * 2 + i * 2.1; ctx.beginPath(); ctx.ellipse(0, 0, TILE * 0.3 - i * 4, TILE * 0.42 - i * 4, a, 0.3, 2.8); ctx.stroke(); }
+    ctx.restore();
+  }
 
   // A grumpy little fellow — angry brows, a handlebar moustache and tiny shoes.
   // Deliberately STILL: the only motion is a subtle landing squash and a walk
@@ -984,6 +1032,21 @@
 
     // ground shadow at the floor surface
     if (player.onGround) { ctx.fillStyle = "rgba(0,0,0,0.30)"; ctx.beginPath(); ctx.ellipse(0, floorY, BR * 1.05, 3.0, 0, 0, 7); ctx.fill(); }
+    // base under-glow — vivid neon lights that vibe with the world's colour (toggle with L)
+    if (baseGlow) {
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      const pulse = 0.6 + 0.4 * Math.sin(animTime * 3.2), gc = curTheme.ember || "rgba(255,150,80,0.6)";
+      const gg = ctx.createRadialGradient(0, floorY + 1, 1, 0, floorY + 1, 30);
+      gg.addColorStop(0, "rgba(255,255,255,0.5)"); gg.addColorStop(0.25, gc); gg.addColorStop(1, "transparent");
+      ctx.globalAlpha = pulse; ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.ellipse(0, floorY + 1, 26, 9, 0, 0, 7); ctx.fill();
+      // bright glowing light pucks under each shoe
+      ctx.globalAlpha = pulse; ctx.fillStyle = gc;
+      ctx.beginPath(); ctx.ellipse(-7, floorY + 1, 6, 2.4, 0, 0, 7); ctx.ellipse(7, floorY + 1, 6, 2.4, 0, 0, 7); ctx.fill();
+      ctx.globalAlpha = 0.9 * pulse; ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(-7, floorY, 1.4, 0, 7); ctx.arc(7, floorY, 1.4, 0, 7); ctx.fill();
+      ctx.restore();
+    }
 
     // ---- slim stick legs + bright shoes splayed OPPOSITE ways, resting ON the floor ----
     const hipY = bodyY + BR * 0.6;
