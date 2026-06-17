@@ -142,6 +142,16 @@
   window.addEventListener("keydown", (e) => {
     if (e.target === nameInput) return;                 // let the name field type freely
     const k = e.key.toLowerCase();
+    // While playing, the game OWNS the keyboard. If a chrome/touch button is focused (from a
+    // mouse click or a stray Tab), Space (jump) or Enter would "click" it and pop an overlay
+    // that pauses the game — which feels exactly like "WASD stopped working". So: keep Tab from
+    // moving focus, drop focus off any focused button, and swallow Enter mid-game.
+    if (state === "play" || state === "stage") {
+      if (k === "tab") { e.preventDefault(); return; }
+      const ae = document.activeElement;
+      if (ae && ae.tagName === "BUTTON") ae.blur();
+      if (k === "enter") { e.preventDefault(); return; }
+    }
     if (k === "arrowleft" || k === "a") { keys.left = true; e.preventDefault(); }
     else if (k === "arrowright" || k === "d") { keys.right = true; e.preventDefault(); }
     else if (k === "arrowup" || k === "w" || k === " ") { if (state === "play" && !e.repeat) pressJump(); e.preventDefault(); }
@@ -156,6 +166,8 @@
   });
   // never get stuck "holding" a key when focus leaves the window
   window.addEventListener("blur", () => { keys.left = keys.right = keys.jump = false; });
+  // a clicked button must not KEEP focus — otherwise the next Space (jump) would re-activate it
+  document.addEventListener("click", (e) => { const btn = e.target && e.target.closest && e.target.closest("button"); if (btn) btn.blur(); });
 
   // touch buttons
   function bindHold(id, on, off) {
@@ -1388,6 +1400,10 @@
         pwrId, pwrCharge: +pwrCharge.toFixed(3) });
       window.__DLstart = (nm) => { nameInput.value = nm || "BOT"; startGame(); };
       window.__DLkey = (k, down) => { if (k === "left") keys.left = down; else if (k === "right") keys.right = down; else if (k === "jump") { if (down) pressJump(); else releaseJump(); } };
+      // simulate clearing the current level (advances through stage interstitials too)
+      window.__DLwin = () => { if (state === "play") { if (levelIndex + 1 < LEVELS.length) advanceTo(levelIndex + 1); else winGame(); } };
+      window.__DLdie = () => { if (state === "play" && player && !player.dead) die(false); };
+      window.__DLfocus = () => (document.activeElement && (document.activeElement.id || document.activeElement.tagName));
       // deterministic single-step driver (for replaying solver plans against the real engine)
       window.__DLmanual = (on) => { window.__DLman = !!on; };
       window.__DLtick = (dir, jumpStart, jumpHold) => {
