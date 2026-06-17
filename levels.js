@@ -555,8 +555,8 @@
              "                    ",
              "                    ",
              " S                  ",
-             "###J##LLLL##########"],
-      texts: [{c:1,t:"floor's molten ahead. no walking past THIS."}, {c:3,t:"hit the pad, ride it up out of the dark."}, {c:9,t:"the exit floats in the deep. climb to it."}] },
+             "####J#LLLL##########"],
+      texts: [{c:1,t:"floor's molten ahead. no walking past THIS."}, {c:4,t:"hit the pad, ride it up and tip onto the ledge."}, {c:9,t:"the exit floats in the deep. climb to it."}] },
 
     { name: "Crystal Crush", spd: 1.4,
       grid: ["                    ",

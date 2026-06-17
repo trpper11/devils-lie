@@ -15,7 +15,7 @@
 
   // ---- Physics (px, seconds) ------------------------------------------
   const GRAVITY = 2400, MOVE = 250, JUMP = 700, BIG_JUMP = 980, BOUNCE = 980, DBL_JUMP = 660;
-  const MAX_FALL = 900, ACCEL = 2600, AIR_ACCEL = 1800, FRICTION = 2200;
+  const MAX_FALL = 900, ACCEL = 3300, AIR_ACCEL = 2400, FRICTION = 2600;
   const COYOTE = 0.10, JUMP_BUF = 0.12, DBL_TAP = 0.30;
   const PW = 26, PH = 28;   // solid-collision box (floors/walls/gaps) — unchanged so platforming stays tuned
   const HBX = 3, HBY = 3;   // hazard box inset — spikes/lava/traps test this tighter box (matches the round balloon)
@@ -28,6 +28,16 @@
     sight:   { dbljump: false, moveMul: 1,    jumpMul: 0.90, trueSight: true  }, // +see the lies, −jump height
   };
   let pwr = POWERS.none, pwrId = "none";
+  // ---- Upgrade charge: a power lasts ~4-5 levels. The bar on top grows a little on a clean
+  // (deathless) clear, drains on every death, and is spent a chunk each level you use it. At 0
+  // the upgrade LAPSES back to no power. ----
+  const PWR_META = {
+    dbljump: { label: "DOUBLE JUMP", col: "#5cc8ff" },
+    speed:   { label: "SPEED",       col: "#ffd14d" },
+    sight:   { label: "TRUE SIGHT",  col: "#b388ff" },
+  };
+  const PWR_LEVEL_COST = 0.22, PWR_CLEAN_BONUS = 0.10, PWR_DEATH_DRAIN = 0.14;
+  let pwrCharge = 0, pwrChargeShown = 0, levelDeaths = 0;
   let baseGlow = true;   // neon under-glow on the character (toggle with L)
 
   // =====================================================================
@@ -76,9 +86,14 @@
     const cssH = Math.max(1, Math.floor(H * scale));
     frame.style.width = cssW + "px";
     frame.style.height = cssH + "px";
-    const dpr = Math.min(3, window.devicePixelRatio || 1); // sharper on hi-DPI / 4K
-    canvas.width = Math.floor(cssW * dpr);
-    canvas.height = Math.floor(cssH * dpr);
+    // Crisp but CHEAP: cap DPR at 2 (full-retina sharp) AND cap total backing-store area so the
+    // per-frame dynamic redraw stays light — that's exactly why the small preview never drops a
+    // frame. A 3x canvas on a 4K display is ~7 MP/frame; this keeps it ~2.3 MP → buttery 60 fps.
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    let cw = Math.floor(cssW * dpr), ch = Math.floor(cssH * dpr);
+    const MAXPX = 2300000;
+    if (cw * ch > MAXPX) { const k = Math.sqrt(MAXPX / (cw * ch)); cw = Math.max(1, Math.floor(cw * k)); ch = Math.max(1, Math.floor(ch * k)); }
+    canvas.width = cw; canvas.height = ch;
     renderScale = canvas.width / W;
     checkOrientation();
     if (grid) { if (_staticTimer) clearTimeout(_staticTimer); _staticTimer = setTimeout(() => { _staticTimer = null; if (grid) buildStaticLayer(); }, 120); } // debounced re-bake (crisp, no drag jank)
@@ -272,6 +287,7 @@
   function rowStr(g, r) { return g[r]; }
   function loadLevel(i) {
     levelIndex = i;
+    levelDeaths = 0; // track deaths within this level for the clean-clear upgrade bonus
     const L = LEVELS[i];
     grid = L.grid;
     LROWS = grid.length; // multi-story levels are taller than one screen
@@ -343,6 +359,7 @@
     if (player.dead) return;
     player.dead = true; player.deathT = 0;
     deaths++; elDeaths.textContent = "DEATHS " + deaths;
+    if (pwrId !== "none") { levelDeaths++; pwrCharge -= PWR_DEATH_DRAIN; if (pwrCharge <= 0) lapsePower(); } // each death bleeds the upgrade bar
     shake = burned ? 20 : 16; hitStop = 0.06;
     if (burned) sndBurn(); else sndDeath();
     // balloon shreds + confetti burst (fire colours when burned in lava)
@@ -733,6 +750,14 @@
       ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x + 3, y - 1.6, 1.2, 0, 7); ctx.fill(); ctx.restore();
     }
   }
+  // rounded-rect path helper (used by the HUD upgrade meter)
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    r = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
   function render() {
     // Interpolate the player between the last two physics ticks for silky motion
     // (decouples the 120 Hz sim from the display refresh — no stutter on any screen).
@@ -745,7 +770,7 @@
     // vertical camera — follows the balloon in tall (multi-story) levels; 0 when the level fits one screen
     const levelH = LROWS * TILE, camMax = Math.max(0, levelH - H);
     const camTarget = Math.max(0, Math.min(camMax, (player && state === "play" ? (player.ry !== undefined ? player.ry : player.y) : 0) + PH / 2 - H / 2));
-    camY += (camTarget - camY) * Math.min(1, animDt * 9);
+    camY += (camTarget - camY) * (1 - Math.pow(0.00008, animDt)); // framerate-independent follow (silky on any refresh)
     if (camY < 0.4) camY = 0; if (Math.abs(camY - camTarget) < 0.4) camY = camTarget;
 
     ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
@@ -805,6 +830,32 @@
     ctx.globalAlpha = 1;
 
     ctx.restore(); // ---- end world space; back to screen space ----
+
+    // ---- upgrade charge meter (top-center HUD) — only while a power is active ----
+    pwrChargeShown += (pwrCharge - pwrChargeShown) * Math.min(1, animDt * 6); // smooth fill/drain
+    if (state === "play" && (pwrId !== "none" || pwrChargeShown > 0.02)) {
+      const meta = PWR_META[pwrId] || { label: "UPGRADE", col: "#9aa6b8" };
+      const bw = 300, bh = 13, bx = (W - bw) / 2, by = 14, frac = Math.max(0, Math.min(1, pwrChargeShown));
+      const low = frac < 0.28, blink = low ? (0.55 + 0.45 * Math.abs(Math.sin(animTime * 6))) : 1;
+      ctx.save();
+      // track
+      ctx.fillStyle = "rgba(0,0,0,0.55)"; roundRect(bx - 2, by - 2, bw + 4, bh + 4, 7); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.10)"; roundRect(bx, by, bw, bh, 5); ctx.fill();
+      // fill
+      const fg = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+      fg.addColorStop(0, meta.col); fg.addColorStop(1, low ? "#ff5d6c" : "#ffffff");
+      ctx.globalAlpha = blink; ctx.fillStyle = fg; roundRect(bx, by, Math.max(2, bw * frac), bh, 5); ctx.fill();
+      ctx.globalAlpha = 1;
+      // segment ticks (each ~one level of charge)
+      ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 1.5;
+      for (let s = 1; s < 5; s++) { const sx = bx + bw * (s / 5); ctx.beginPath(); ctx.moveTo(sx, by); ctx.lineTo(sx, by + bh); ctx.stroke(); }
+      // label
+      ctx.font = "bold 10px Poppins, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = low ? "#ffd0d4" : meta.col;
+      ctx.fillText("⚡ " + meta.label + (low ? "  — fading!" : ""), W / 2, by + bh / 2 + 0.5);
+      ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      ctx.restore();
+    }
 
     // reversed-controls banner (screen-space HUD)
     if (reverseActive) {
@@ -1179,8 +1230,14 @@
     document.getElementById("power-screen").classList.remove("hidden");
     state = "power";
   }
+  function lapsePower() {
+    pwrCharge = 0; pwrId = "none"; pwr = POWERS.none;
+    activeText = "⚡ upgrade lapsed"; activeTextT = 1.9;
+    tone(220, 0.28, "sawtooth", 0.05, 110);
+  }
   function beginRun() {
     pwr = POWERS[pwrId] || POWERS.none;
+    pwrCharge = pwrChargeShown = (pwrId === "none") ? 0 : 1; levelDeaths = 0; // full charge when a power is picked
     document.getElementById("power-screen").classList.add("hidden");
     deaths = 0; elDeaths.textContent = "DEATHS 0";
     runStart = performance.now();
@@ -1205,6 +1262,13 @@
   };
   let pendingLevel = 0;
   function advanceTo(next) {
+    // upgrade accounting for the level just CLEARED: a clean (deathless) clear nudges the bar up,
+    // then using the power costs a chunk; the bar lapses the boon when it runs dry.
+    if (pwrId !== "none") {
+      if (levelDeaths === 0) pwrCharge = Math.min(1, pwrCharge + PWR_CLEAN_BONUS);
+      pwrCharge -= PWR_LEVEL_COST;
+      if (pwrCharge <= 0) lapsePower();
+    }
     LB.progress(next + 1, deaths); // record how far they've gotten (non-finishers count too)
     if (STAGES[next]) { showStage(next); return; }
     loadLevel(next);
@@ -1320,7 +1384,8 @@
   try {
     if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) {
       window.__DL = () => ({ state, level: levelIndex + 1, deaths, px: player && player.x, py: player && player.y,
-        onGround: player && player.onGround, exitC: exit && exit.c, reverse: reverseActive });
+        onGround: player && player.onGround, exitC: exit && exit.c, reverse: reverseActive,
+        pwrId, pwrCharge: +pwrCharge.toFixed(3) });
       window.__DLstart = (nm) => { nameInput.value = nm || "BOT"; startGame(); };
       window.__DLkey = (k, down) => { if (k === "left") keys.left = down; else if (k === "right") keys.right = down; else if (k === "jump") { if (down) pressJump(); else releaseJump(); } };
       // deterministic single-step driver (for replaying solver plans against the real engine)
