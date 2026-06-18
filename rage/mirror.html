@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Devil's Lie — MIRROR</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060a;color:#cdd3df;font-family:system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;touch-action:none}
+  .bar{display:flex;gap:16px;align-items:center;font-size:13px;letter-spacing:.5px}
+  .bar .nm{color:#b388ff;font-weight:700;letter-spacing:1px}
+  .bar .s{color:#8a90a0}
+  canvas{image-rendering:auto;border-radius:10px;box-shadow:0 24px 70px rgba(0,0,0,.7);background:#05060a;display:block}
+  .hint{font-size:12px;color:#6a7080}
+  .hint b{color:#aab0c0}
+  a.back{position:fixed;left:14px;top:12px;font-size:12px;color:#6a7080;text-decoration:none}
+  a.back:hover{color:#b388ff}
+</style></head>
+<body>
+  <a class="back" href="index.html">‹ all three</a>
+  <div class="bar"><span class="nm" id="hud-name">MIRROR</span><span class="s" id="hud-l">LEVEL 1/3</span><span class="s" id="hud-d">DEATHS 0</span></div>
+  <canvas id="game" width="800" height="480"></canvas>
+  <div class="hint"><b>← → / A D</b> move · <b>Space / ↑ / W</b> jump · <b>R</b> restart</div>
+  <script src="core.js"></script>
+  <script src="mirror.js"></script>
+  <script>Rage.init(window.MECH_MIRROR);</script>
+</body></html>
