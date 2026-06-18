@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Devil's Lie — The Script & Story Bible</title>
+<style>
+  :root{ --bg:#0a0608; --bg2:#120a0d; --ink:#ece4df; --mut:#a99a93; --gold:#ffcf5c; --crim:#ff4d6a; --crim2:#c01030; --line:#2a1a1f; }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Georgia",serif;line-height:1.65}
+  body{background:
+    radial-gradient(900px 500px at 80% -10%, rgba(255,77,106,0.10), transparent 60%),
+    radial-gradient(700px 600px at -10% 30%, rgba(255,207,92,0.06), transparent 60%),
+    var(--bg);}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 22px 90px}
+  header.hero{text-align:center;padding:40px 0 26px;border-bottom:1px solid var(--line)}
+  .kicker{font-family:system-ui,sans-serif;letter-spacing:5px;font-size:12px;color:var(--crim);text-transform:uppercase}
+  h1{font-size:clamp(40px,9vw,78px);margin:.1em 0 .05em;letter-spacing:1px;
+     background:linear-gradient(180deg,#fff,#ffcf5c 55%,#ff6b3d);-webkit-background-clip:text;background-clip:text;color:transparent;
+     text-shadow:0 0 40px rgba(255,90,40,.25)}
+  .tag{font-style:italic;color:var(--mut);font-size:clamp(15px,2.6vw,19px)}
+  h2{font-family:system-ui,sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);
+     margin:54px 0 6px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:23px;margin:26px 0 4px;color:#fff}
+  h3 .role{font-family:system-ui,sans-serif;font-size:12px;letter-spacing:2px;color:var(--crim);text-transform:uppercase;display:block;margin-bottom:2px}
+  p{margin:10px 0}
+  .lead{font-size:19px}
+  em,i{color:#f6ead9}
+  strong{color:#fff}
+  a{color:var(--gold)}
+  .toc{font-family:system-ui,sans-serif;font-size:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:28px 0}
+  .toc b{display:block;letter-spacing:3px;font-size:11px;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+  .toc ol{margin:0;padding-left:20px;columns:2;column-gap:26px}
+  .toc a{text-decoration:none;color:var(--ink)} .toc a:hover{color:var(--gold)}
+  blockquote{margin:14px 0;padding:12px 18px;border-left:3px solid var(--crim);background:rgba(255,77,106,.06);
+     font-style:italic;color:#f3e7dd;border-radius:0 8px 8px 0}
+  .devil{font-style:italic}
+  .devil:before{content:"“";color:var(--crim)} .devil:after{content:"”";color:var(--crim)}
+  .lines{font-family:system-ui,sans-serif;font-style:normal;font-size:15px;line-height:1.5}
+  .lines .trig{display:block;letter-spacing:2px;font-size:11px;text-transform:uppercase;color:var(--gold);margin:18px 0 4px}
+  .lines ul{margin:4px 0;padding-left:18px} .lines li{margin:6px 0;color:#e9ddd4}
+  .card{background:linear-gradient(180deg,var(--bg2),#0d0709);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14.5px;margin:14px 0}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  td b{color:var(--crim)}
+  .act{display:flex;gap:14px;margin:12px 0;align-items:flex-start}
+  .act .no{font-family:system-ui;font-weight:700;color:var(--crim);min-width:62px;font-size:13px;letter-spacing:1px;padding-top:3px}
+  .foot{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);font-family:system-ui,sans-serif;font-size:12px;color:var(--mut);text-align:center}
+  .pill{display:inline-block;font-family:system-ui;font-size:11px;letter-spacing:1px;color:#0a0608;background:var(--gold);border-radius:20px;padding:2px 10px;text-transform:uppercase}
+</style></head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Story Bible · Draft I</div>
+    <h1>Devil's&nbsp;Lie</h1>
+    <p class="tag">The level is lying to you. So is he.</p>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#logline">Logline</a></li>
+      <li><a href="#hires">The "High-Resolution" Pitch</a></li>
+      <li><a href="#twists">Our Three Original Twists</a></li>
+      <li><a href="#tone">Tone &amp; Voice</a></li>
+      <li><a href="#cast">The Cast</a></li>
+      <li><a href="#arc">The Arc (5 Acts)</a></li>
+      <li><a href="#lines">The Proprietor's Script</a></li>
+      <li><a href="#endings">The Endings</a></li>
+      <li><a href="#mechanics">Mechanics ↔ Story</a></li>
+      <li><a href="#next">What I Build Next</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="logline">Logline</h2>
+  <p class="lead">Hell isn't fire. It's a rigged game, and the Devil is the dealer. Every door promises freedom; every floor is a <em>maybe</em>. You'll die a hundred times — and each time he'll convince you it was your fault, because you can't quite remember whether that spike was always there.</p>
+  <p>It was. <span style="color:var(--mut)">(It wasn't.)</span></p>
+
+  <h2 id="hires">The "High-Resolution" Pitch</h2>
+  <p>Most rage games are crude: a spike, a laugh, repeat. The cruelty is mechanical and anonymous. <strong>Devil's Lie plays the long con.</strong> The cruelty is <em>written</em>. The villain has a voice, a wardrobe, and an agenda. The deaths are punchlines — with setups. We're not making a louder troll game; we're making the first one in the genre <strong>with a screenwriter</strong>.</p>
+  <p>That's what "high resolution" means here. Not more pixels — more <em>intent</em>. Every betrayal is authored. Every death has a line waiting for it. The element of surprise isn't random; it's <em>directed</em>, like a magician who's rehearsed the moment your face falls.</p>
+
+  <h2 id="twists">Our Three Original Twists on Rage Bait</h2>
+  <p>The thing that secretly makes <em>every</em> rage game work: the player can't perfectly remember the trap, so they blame themselves and retry. We don't hide that — we build a character on top of it.</p>
+
+  <div class="card">
+    <h3>1 · The Gaslight</h3>
+    <p>The Proprietor <strong>never admits a trap moved.</strong> He insists you misremember. Your faulty memory — the quiet engine of the whole genre — becomes a <em>weapon in his hand</em>. You already blame yourself; he simply agrees with you, warmly, and makes it worse.</p>
+    <blockquote class="devil">That spike was always there, love. I'd remember moving it — I remember everything. You're just… new to consequences.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>2 · The Honest Lie</h3>
+    <p>Once in a long while, he tells <strong>the truth</strong> — "this one's safe, walk right across" — and it <em>is</em>. But you've been trained never to trust him, so you flinch, take the hard route, and die a different way. Distrust becomes a trap of its own.</p>
+    <blockquote class="devil">I told you the truth and you flinched. That's the saddest jump I've seen all day.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>3 · The Tell</h3>
+    <p>Every lie has a <strong>tell</strong> — a tiny, fair, <em>learnable</em> wink: a tile one shade too perfect, a shadow a pixel off, a half-beat flicker before the betrayal. The game is beatable by <em>reading</em> him, not memorizing him. That's the skill hiding under the rage — the thing that turns a meme into a masterpiece, and self-blame into actual mastery.</p>
+  </div>
+
+  <h2 id="tone">Tone &amp; Voice</h2>
+  <p>Theatrical. Velvet menace. A maître d' at a restaurant that serves only you, and tonight's special is your own hubris. He is <em>never angry</em> — anger is for the player. He's amused, patient, faintly disappointed in you, like a chess tutor who saw the mate in three a long time ago and is being polite about it.</p>
+  <p>Dark comedy, <strong>never crude.</strong> Think a stand-up set performed by your own bad decisions. If a line could be shouted by any troll game, cut it. Ours purr.</p>
+
+  <h2 id="cast">The Cast</h2>
+
+  <h3><span class="role">Antagonist · Narrator</span>The Proprietor</h3>
+  <p>The dealer. The liar. He hates "Satan" — too on-the-nose. Impeccably dressed, eternally bored, fond of you the way a cat is fond of a laser pointer. He doesn't want your soul; he has a warehouse of them. He wants your <strong>certainty</strong>. Every death is a small donation of self-belief, and he is <em>obscenely</em> rich.</p>
+  <p><b>Wants:</b> to be believed — not obeyed, <em>believed.</em> &nbsp;<b>Fears:</b> the player who stops trusting their memory <em>and</em> his, and just reads the tells. &nbsp;<b>Voice:</b> warm, lethal, second-person. Calls you <span class="devil">friend</span>, <span class="devil">love</span>, <span class="devil">champ</span>, <span class="devil">little flame</span>.</p>
+
+  <h3><span class="role">Protagonist · The Player</span>The Mark</h3>
+  <p>A small, stubborn ember of a soul — a flickering red thing with an angry little face and bright shoes. Too proud to stay dead, too dim to stop trusting doors. It says <em>nothing</em>. Its entire performance is in the <strong>retry</strong>. The Mark's defiance is the heart of the thing: it never learns to quit. That's either the joke or the heroism. (It's both.)</p>
+
+  <h3><span class="role">Ensemble · The Leaderboard</span>The Regulars</h3>
+  <p>Every soul who came before you, pinned to the wall as a name and a number — how far they got, how many times they died. The Proprietor reads them aloud. Your <strong>leaderboard is the graveyard.</strong> Climbing it means out-lying the dead.</p>
+  <blockquote class="devil">Reyansh. Forty-one levels. Two hundred deaths. We were close, Reyansh and I. He's the wallpaper now.</blockquote>
+
+  <h3><span class="role">Silent Co-Star</span>The Door</h3>
+  <p>Always there. Always glowing. Always promising. The single most <em>honest-looking</em> thing in Hell and the biggest liar of all. Sometimes there are three. One is the way out. He'll even tell you which. He'll be right. <em>Once.</em></p>
+
+  <h2 id="arc">The Arc — Five Acts over Fifty Levels</h2>
+  <div class="act"><div class="no">I · 1–10</div><div><b>The Welcome.</b> Charm offensive. Easy wins; the door delivers; he's a gracious host. He is teaching you to <em>trust</em>. Every gift is a deposit he fully intends to withdraw.</div></div>
+  <div class="act"><div class="no">II · 11–20</div><div><b>The House Rules.</b> The betrayals begin — gently, deniably. First Judas blocks, first moving boxes, first gaslight. <span class="devil">Did the floor move? Floors don't move, friend. You moved.</span> &nbsp;<span class="pill">Stage break: THE VOID</span></div></div>
+  <div class="act"><div class="no">III · 21–30</div><div><b>The Tell.</b> You start to catch the winks. The game quietly rewards reading over remembering. He notices you noticing — and he's <em>pleased.</em> Finally, a worthy mark.</div></div>
+  <div class="act"><div class="no">IV · 31–40</div><div><b>The Honest Lie.</b> He begins telling the truth to weaponize your distrust. The cruelest act, because now <em>you</em> are the one lying — to yourself. <span class="pill">Stage break: OVERDRIVE</span></div></div>
+  <div class="act"><div class="no">V · 41–50</div><div><b>The Door.</b> All masks off. He stops lying entirely — and that is the most disorienting thing of all. The final door. (See Endings.)</div></div>
+
+  <h2 id="lines">The Proprietor's Script — Sample Lines</h2>
+  <p>Organized by trigger. These are the in-game barks; the engine fires the matching pool. Keep them short — he's economical with everything but your patience.</p>
+  <div class="lines">
+    <span class="trig">On boot / title</span>
+    <ul>
+      <li>Welcome back. Or welcome — I never remember which of you is which.</li>
+      <li>The level is lying to you. I taught it everything it knows.</li>
+    </ul>
+    <span class="trig">Act I · lulling you in</span>
+    <ul>
+      <li>See? Easy. I don't know what they warned you about.</li>
+      <li>Left, right, jump. You're a natural. This'll be over in no time. <span style="color:var(--mut)">(it will not)</span></li>
+    </ul>
+    <span class="trig">Fake-floor death</span>
+    <ul>
+      <li>Ah. You trusted the floor. Floors are <em>strangers</em>, friend.</li>
+      <li>I'd say sorry, but we both know I'd be lying. It's sort of my thing.</li>
+    </ul>
+    <span class="trig">Judas block — "the handshake"</span>
+    <ul>
+      <li>A handshake's a handshake. Nobody said anything about <em>keeping</em> it.</li>
+      <li>You stood on it. You <em>committed.</em> That's the part I love.</li>
+    </ul>
+    <span class="trig">Moving box — "the shell game"</span>
+    <ul>
+      <li>Keep your eye on the box. No — <em>that</em> box. No—</li>
+      <li>It was here. Now it's there. Where were <em>you</em>, exactly?</li>
+    </ul>
+    <span class="trig">The gaslight (after a trap moves)</span>
+    <ul>
+      <li>That was always there. I'd remember moving it. I remember everything.</li>
+      <li>You're tired. You're misremembering. Have another go; it'll come back to you.</li>
+      <li>Nothing moved. <em>You</em> moved. You always move.</li>
+    </ul>
+    <span class="trig">Near-win · last-pixel death</span>
+    <ul>
+      <li>So close. I could <em>taste</em> your relief. Delicious.</li>
+      <li>One tile. <em>One.</em> I'll have it engraved on you.</li>
+    </ul>
+    <span class="trig">The honest lie (it's actually true)</span>
+    <ul>
+      <li>This one's safe. Walk right across. …No? Suit yourself. <span style="color:var(--mut)">(it was safe)</span></li>
+      <li>The one time I'm honest, and you call <em>me</em> the liar. Wounded, truly.</li>
+    </ul>
+    <span class="trig">Retry / respawn</span>
+    <ul>
+      <li>Up again. I admire it. I'd find it tragic if it weren't so funny.</li>
+      <li>Death number forty. We should get you a punch card. Tenth one's free.</li>
+    </ul>
+    <span class="trig">Reading the Regulars (leaderboard)</span>
+    <ul>
+      <li>Aanya made it to thirty-two. Aanya is still here. Aanya is the décor.</li>
+      <li>You're four deaths from the lead. The lead is a dead person. Aspire.</li>
+    </ul>
+    <span class="trig">Act V · no more lies</span>
+    <ul>
+      <li>I'm not lying now. That's the trick. You can't tell — and that's me being <em>honest.</em></li>
+      <li>The door's real. Go on. …You don't believe me. Good. You've learned. Pity it won't help.</li>
+    </ul>
+  </div>
+
+  <h2 id="endings">The Endings — the final surprise</h2>
+  <div class="card">
+    <h3>The True Door <span class="pill">primary</span></h3>
+    <p>You reach it believing nothing. He says nothing. You step through — into the <strong>title screen, as the Proprietor.</strong> <span class="devil">Your turn to deal. Try to be a sport about it.</span> The con is a torch you pass. You don't escape Hell; you get <em>promoted.</em> You become the next level's lie.</p>
+  </div>
+  <div class="card">
+    <h3>The Refusal <span class="pill">stretch</span></h3>
+    <p>If a player ever reaches the final door and simply <strong>stands still</strong> — never enters, the one thing the game cannot bait — he <em>loses.</em> <span class="devil">…Huh. You just… stopped. Nobody stops.</span> Credits roll on a soul who beat Hell by refusing to want the door. The only way to win is not to play.</p>
+  </div>
+
+  <h2 id="mechanics">Mechanics ↔ Story</h2>
+  <table>
+    <tr><th>Mechanic</th><th>In the fiction</th><th>The rage it manufactures</th></tr>
+    <tr><td><b>The Tell</b></td><td>His unconscious wink before a lie</td><td>"It was readable — I'm just bad" → mastery, not memory</td></tr>
+    <tr><td><b>The Gaslight</b></td><td>He denies the trap moved</td><td>You blame yourself; he confirms it</td></tr>
+    <tr><td><b>The Honest Lie</b></td><td>Rare true safe path</td><td>Distrust kills you for once</td></tr>
+    <tr><td><b>Judas Block</b></td><td>"The handshake"</td><td>Betrayal <em>after</em> you trusted &amp; committed</td></tr>
+    <tr><td><b>Moving Box</b></td><td>"The shell game"</td><td>The con made physical; timing under pressure</td></tr>
+    <tr><td><b>The Regulars</b></td><td>Leaderboard = graveyard</td><td>Death as social proof; out-lie the dead</td></tr>
+  </table>
+
+  <h2 id="next">What I Build Next</h2>
+  <p>With the voice locked, the characters come to life in this order:</p>
+  <p>1 · <strong>The Proprietor as a presence</strong> — the bark system: a line-pool engine that fires the right pool on the right trigger (death type, near-win, retry count, gaslight after a moved trap), shown in his voice with proper typographic weight. &nbsp;2 · <strong>The Mark</strong> — small character beats that sell the defiance (the angry little face reacting, the stubborn dust-off on respawn). &nbsp;3 · <strong>The two original mechanics</strong> — the Judas Block ("handshake") and the Moving Box ("shell game"), each with its fair <em>Tell</em>, mirrored in the solver so every level stays beatable. &nbsp;4 · <strong>Two rage-bait set-piece levels</strong> — "Trust Issues" and "So Close" — authored to the arc above.</p>
+  <p class="tag" style="margin-top:18px">He's ready for his lines. Say the word and I'll put him on stage.</p>
+
+  <div class="foot">DEVIL'S LIE · Story Bible Draft I · written for the game at trpper11.github.io/devils-lie</div>
+</div>
+</body></html>
