@@ -190,9 +190,10 @@
       if (ch === " " || ch === "S") continue;
       if (ch === "#" || ch === "=") drawBlock(x, y);
       else if (ch === "^") drawSpikes(x, y, TILE);
-      else if (ch === "E") { if (!MECH.skipDoor) drawDoor(x, y, true); }
+      else if (ch === "E") { /* door drawn from live exitCell below, so it can move */ }
       else if (MECH.drawTile) MECH.drawTile(ctx, ch, x, y, c, r);
     }
+    if (exitCell && !MECH.skipDoor) drawDoor(exitCell.c * TILE, exitCell.r * TILE, true);
     if (MECH.drawOver) MECH.drawOver(ctx, env());
     if (!player.dead && state === "play") drawPlayer(rx, ry);
     // particles
@@ -290,6 +291,8 @@
     kill: () => die(), parts: pushParts,
     // debug / test hooks
     get state() { return state; }, get level() { return li; }, get deaths() { return deaths; },
+    shakeNow(v) { shake = Math.max(shake, v); }, boom() { beep(90, 0.18, "sawtooth", 0.13, 40); beep(150, 0.1, "square", 0.08, 60); },
+    tick() { return beep; },
     goto(i) { deaths = 0; loadLevel(i); document.getElementById("hud-l").textContent = "LEVEL " + (i + 1) + "/" + MECH.levels.length; },
     press(k, v) { if (k === "left") keys.left = v; else if (k === "right") keys.right = v; else if (k === "jump") { if (v) { player.jumpBuf = JBUF; keys.jump = true; } else keys.jump = false; } },
     exitPx() { return exitCell ? { x: exitCell.c * TILE, y: exitCell.r * TILE } : null; },
